@@ -1,14 +1,12 @@
 --[[
-    HelloHub - Blox Fruits Edition FINAL
-    Tính năng:
-    - Giảm lag
-    - Auto Farm / Chest / Fruit / Mastery
-    - Auto Quest
-    - Auto Gacha / Store Fruit
-    - Auto Nhặt Trái
-    - Auto Raid
-    - Auto Tribe
-    Cách dùng: loadstring(game:HttpGet("LINK_RAW_CUA_BAN"))()
+    ╔══════════════════════════════════════════╗
+    ║   HelloHub V6 FINAL - Blox Fruits        ║
+    ║   Tác giả: Khang5138                     ║
+    ║   Đầy đủ tính năng + Auto Mythical       ║
+    ╚══════════════════════════════════════════╝
+    
+    Cách dùng:
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Khang5138/HelloHub-VN/main/HelloHub.lua"))()
 --]]
 
 -- ===== SERVICES =====
@@ -19,139 +17,60 @@ local StarterGui = game:GetService("StarterGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 -- ===== CHECK BLOX FRUITS =====
 if not game:IsLoaded() then game.Loaded:Wait() end
-
 local validPlaces = {2753915549, 4442272183, 7449423635}
 local isBF = false
 for _, id in pairs(validPlaces) do
     if game.PlaceId == id then isBF = true break end
 end
-
 if not isBF then
-    StarterGui:SetCore("SendNotification", {
-        Title = "HelloHub";
-        Text = "❌ Chỉ hoạt động trong Blox Fruits!";
-        Duration = 5;
-    })
+    StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="❌ Chỉ Blox Fruits!"; Duration=5})
     return
 end
 
-print("[HelloHub] Blox Fruits FULL loaded!")
+print("[HelloHub V6] Loaded!")
 
 -- ===== BIẾN TOÀN CỤC =====
-local AutoFarm = false
-local AutoChest = false
-local AutoFruit = false
-local AutoFruitDrop = false
-local AutoMastery = false
-local AutoQuest = false
-local AutoGacha = false
-local AutoStoreFruit = false
-local AutoRaid = false
-local AutoTribe = false
-local MasteryMethod = "Click"
+local Toggles = {
+    AutoFarm = false, AutoChest = false, AutoFruitDrop = false,
+    AutoMastery = false, AutoQuest = false, AutoGacha = false,
+    AutoStoreFruit = false, AutoRaid = false, AutoTribe = false,
+    SpeedFarm = false, AuraKill = false, AutoStat = false,
+    AutoNewQuest = false, AutoHopMythical = false,
+}
+local MasteryWeapon = "Nearest"
+local StatChoice = "Melee"
+local AuraRange = 100
+local LastQuestLevel = 0
 
--- ===== TẠO GUI =====
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HelloHub"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- ===== DANH SÁCH TRÁI MYTHICAL =====
+local MythicalFruits = {
+    "Dragon", "Leopard", "Kitsune", "Dough", "Venom",
+    "Control", "Spirit", "Mammoth", "T-Rex", "Gravity",
+    "Shadow", "Portal", "Rumble", "Blizzard", "Pain",
+    "Love", "Spider", "Sound", "Phoenix"
+}
 
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-ToggleBtn.Text = "🍎"
-ToggleBtn.TextScaled = true
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.Parent = ScreenGui
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 25)
-ToggleBtn.Visible = false
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 340, 0, 560)
-MainFrame.Position = UDim2.new(0.5, -170, 0.5, -280)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(0, 170, 255)
-UIStroke.Thickness = 2
-UIStroke.Parent = MainFrame
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-Title.BorderSizePixel = 0
-Title.Text = "🍎 HelloHub - Blox Fruits FULL"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextScaled = true
-Title.Font = Enum.Font.GothamBold
-Title.Parent = MainFrame
-Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 10)
-
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -35, 0, 2)
-MinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-MinBtn.Text = "X"
-MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextScaled = true
-MinBtn.Parent = MainFrame
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
-
-local Scroll = Instance.new("ScrollingFrame")
-Scroll.Size = UDim2.new(1, -20, 1, -50)
-Scroll.Position = UDim2.new(0, 10, 0, 40)
-Scroll.BackgroundTransparency = 1
-Scroll.BorderSizePixel = 0
-Scroll.ScrollBarThickness = 5
-Scroll.CanvasSize = UDim2.new(0, 0, 0, 1000)
-Scroll.Parent = MainFrame
-
-local UIList = Instance.new("UIListLayout")
-UIList.Padding = UDim.new(0, 8)
-UIList.SortOrder = Enum.SortOrder.LayoutOrder
-UIList.Parent = Scroll
-
--- ===== HÀM TẠO UI =====
-local function makeButton(text, color, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -5, 0, 40)
-    btn.BackgroundColor3 = color or Color3.fromRGB(40, 180, 90)
-    btn.BorderSizePixel = 0
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextScaled = true
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = Scroll
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-    btn.MouseButton1Click:Connect(callback)
-    return btn
-end
-
-local function makeLabel(text)
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -5, 0, 25)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = Color3.fromRGB(0, 170, 255)
-    lbl.TextScaled = true
-    lbl.Font = Enum.Font.GothamBold
-    lbl.Parent = Scroll
-    return lbl
-end
+-- ===== MÀU =====
+local Colors = {
+    Bg = Color3.fromRGB(20, 20, 28),
+    Tab = Color3.fromRGB(35, 35, 45),
+    TabActive = Color3.fromRGB(0, 170, 255),
+    BtnOff = Color3.fromRGB(60, 60, 75),
+    BtnOn = Color3.fromRGB(0, 200, 100),
+    Text = Color3.fromRGB(240, 240, 240),
+    Accent = Color3.fromRGB(0, 170, 255),
+    Sub = Color3.fromRGB(150, 150, 170),
+    Mythical = Color3.fromRGB(180, 80, 200),
+}
 
 -- ===== HÀM TIỆN ÍCH =====
 local function getHRP()
@@ -159,11 +78,14 @@ local function getHRP()
     return c and c:FindFirstChild("HumanoidRootPart")
 end
 
+local function getHumanoid()
+    local c = LocalPlayer.Character
+    return c and c:FindFirstChildOfClass("Humanoid")
+end
+
 local function teleportTo(pos)
     local hrp = getHRP()
-    if hrp then
-        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
-    end
+    if hrp then hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0)) end
 end
 
 local function attack()
@@ -173,7 +95,382 @@ local function attack()
     end)
 end
 
--- ===== GIẢM LAG =====
+local function getPlayerLevel()
+    local stats = LocalPlayer:FindFirstChild("Data")
+    if stats then
+        local lvl = stats:FindFirstChild("Level")
+        if lvl then return lvl.Value end
+    end
+    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    if ls then
+        for _, v in pairs(ls:GetChildren()) do
+            if v.Name:find("Level") then return v.Value end
+        end
+    end
+    return 0
+end
+
+local function getStatPoints()
+    local stats = LocalPlayer:FindFirstChild("Data")
+    if stats then
+        local p = stats:FindFirstChild("Points") or stats:FindFirstChild("StatPoints")
+        if p then return p.Value end
+    end
+    return 0
+end
+
+-- ===== TÌM QUÁI =====
+local function getMonster()
+    local nearest, dist = nil, math.huge
+    local hrp = getHRP()
+    if not hrp then return nil end
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
+               and obj:FindFirstChild("HumanoidRootPart") then
+                local hum = obj:FindFirstChild("Humanoid")
+                if hum.Health > 0 and obj ~= LocalPlayer.Character then
+                    local n = obj.Name
+                    if not n:find("NPC") and not n:find("Barber") and not n:find("Shop")
+                       and not n:find("Teller") and not n:find("Expert") 
+                       and not n:find("Dealer") and not Players:GetPlayerFromCharacter(obj) then
+                        local d = (obj.HumanoidRootPart.Position - hrp.Position).Magnitude
+                        if d < dist then nearest, dist = obj, d end
+                    end
+                end
+            end
+        end)
+    end
+    return nearest
+end
+
+-- ===== TÌM RƯƠNG =====
+local function getChest()
+    local nearest, dist = nil, math.huge
+    local hrp = getHRP()
+    if not hrp then return nil end
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("Model") and (obj.Name == "Chest" or obj.Name:find("Chest")) then
+                local part = obj:FindFirstChild("HumanoidRootPart") 
+                          or obj:FindFirstChildWhichIsA("BasePart")
+                if part then
+                    local d = (part.Position - hrp.Position).Magnitude
+                    if d < dist then nearest, dist = obj, d end
+                end
+            end
+        end)
+    end
+    return nearest
+end
+
+-- ===== TÌM TRÁI RƠI (BẤT KỲ) =====
+local function getFruitDrop()
+    local nearest, dist = nil, math.huge
+    local hrp = getHRP()
+    if not hrp then return nil end
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if (obj:IsA("Tool") or obj:IsA("Model")) 
+               and (obj.Name:find("Fruit") or obj.Name == "Fruit") then
+                local part = obj:FindFirstChild("Handle") 
+                          or obj:FindFirstChildWhichIsA("BasePart")
+                if part then
+                    local d = (part.Position - hrp.Position).Magnitude
+                    if d < dist then nearest, dist = obj, d end
+                end
+            end
+        end)
+    end
+    return nearest
+end
+
+local function pickUpFruit(fruit)
+    if not fruit then return end
+    pcall(function()
+        local part = fruit:FindFirstChild("Handle") 
+                  or fruit:FindFirstChildWhichIsA("BasePart")
+        if part then
+            teleportTo(part.Position)
+            task.wait(0.1)
+            if firetouchinterest and getHRP() then
+                firetouchinterest(getHRP(), part, 0)
+                task.wait(0.05)
+                firetouchinterest(getHRP(), part, 1)
+            end
+        end
+    end)
+end
+
+-- ===== KIỂM TRA TRÁI MYTHICAL TRÊN MAP =====
+local function getMythicalFruitOnMap()
+    local foundFruit = nil
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if (obj:IsA("Tool") or obj:IsA("Model")) then
+                local name = obj.Name
+                local part = obj:FindFirstChild("Handle") 
+                          or obj:FindFirstChildWhichIsA("BasePart")
+                if part then
+                    for _, fruitName in ipairs(MythicalFruits) do
+                        if name:find(fruitName) then
+                            foundFruit = obj
+                            return
+                        end
+                    end
+                end
+            end
+        end)
+    end
+    return foundFruit
+end
+
+-- ===== NPC QUEST =====
+local function getQuestNPCFixed()
+    local nearest, dist = nil, math.huge
+    local hrp = getHRP()
+    if not hrp then return nil end
+    local questNPCNames = {
+        "Quest", "Master", "Captain", "Bartender", "Sword", "Blade", 
+        "Citizen", "King", "Baratie", "Barto", "Gan Fall", "Usopp",
+        "Nami", "Buggy", "Smoker", "Tashigi"
+    }
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
+               and obj:FindFirstChild("Head") then
+                local n = obj.Name
+                for _, validName in ipairs(questNPCNames) do
+                    if n:find(validName) then
+                        local d = (obj.Head.Position - hrp.Position).Magnitude
+                        if d < dist then nearest, dist = obj, d end
+                        break
+                    end
+                end
+            end
+        end)
+    end
+    return nearest
+end
+
+local function doQuestFixed()
+    local npc = getQuestNPCFixed()
+    if not npc or not npc:FindFirstChild("Head") then return false end
+    local hrp = getHRP()
+    if not hrp then return false end
+    hrp.CFrame = CFrame.new(npc.Head.Position + Vector3.new(0, 0, 4))
+    task.wait(0.5)
+    local fired = false
+    pcall(function()
+        for _, obj in pairs(npc:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = 0
+                fireproximityprompt(obj)
+                fired = true
+                task.wait(0.2)
+            end
+        end
+    end)
+    if not fired then attack() end
+    return true
+end
+
+-- ===== GACHA =====
+local function doGacha()
+    pcall(function()
+        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+        if remotes then
+            local commF = remotes:FindFirstChild("CommF_")
+            local commE = remotes:FindFirstChild("CommE_")
+            if commF then
+                pcall(function() commF:InvokeServer("BlackMarket", "BuyFruit") end)
+                task.wait(0.2)
+                pcall(function() commF:InvokeServer("Cousin", "BuyFruit") end)
+                task.wait(0.2)
+            end
+            if commE then
+                pcall(function() commE:InvokeServer("BuyFruit") end)
+            end
+        end
+        local dealer
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
+               and (obj.Name:find("Dealer") or obj.Name:find("Cousin")) then
+                dealer = obj; break
+            end
+        end
+        if dealer and dealer:FindFirstChild("HumanoidRootPart") then
+            local hrp = getHRP()
+            if hrp then
+                hrp.CFrame = CFrame.new(dealer.HumanoidRootPart.Position + Vector3.new(0, 0, 5))
+                task.wait(0.3)
+                for _, obj in pairs(dealer:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        obj.HoldDuration = 0
+                        fireproximityprompt(obj)
+                        task.wait(0.2)
+                    end
+                end
+            end
+        end
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            for _, gui in pairs(playerGui:GetChildren()) do
+                pcall(function()
+                    for _, obj in pairs(gui:GetDescendants()) do
+                        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                            local txt = string.lower(obj.Text or "")
+                            if txt:find("buy") or txt:find("purchase") or txt:find("mua") then
+                                obj:Activate()
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+-- ===== LƯU TRÁI =====
+local function storeFruits()
+    pcall(function()
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        if not backpack then return end
+        for _, tool in pairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") and tool:FindFirstChild("Handle") then
+                local isFruit = tool.Name:find("Fruit") ~= nil
+                for _, tag in pairs(tool:GetChildren()) do
+                    if tag:IsA("StringValue") and tag.Name == "Fruit" then isFruit = true end
+                end
+                if isFruit then
+                    local storage = Workspace:FindFirstChild("Fruit Storage") 
+                                 or Workspace:FindFirstChild("Chest")
+                    if storage then
+                        local part = storage:FindFirstChildWhichIsA("BasePart") 
+                                  or storage:FindFirstChild("HumanoidRootPart")
+                        if part then
+                            local hrp = getHRP()
+                            if hrp then
+                                hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 0, 5))
+                                task.wait(0.3)
+                                tool.Parent = storage
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- ===== MASTERY =====
+local function getEquippedWeapon()
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChildOfClass("Tool")
+end
+
+local function getMasteryWeapon()
+    if MasteryWeapon == "Nearest" then
+        return getEquippedWeapon()
+    else
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        local char = LocalPlayer.Character
+        if char then
+            for _, t in pairs(char:GetChildren()) do
+                if t:IsA("Tool") and t.Name == MasteryWeapon then return t end
+            end
+        end
+        if backpack then
+            for _, t in pairs(backpack:GetChildren()) do
+                if t:IsA("Tool") and t.Name == MasteryWeapon then
+                    t.Parent = char
+                    return t
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function masteryAttack()
+    pcall(function()
+        local tool = getMasteryWeapon()
+        if tool then
+            tool:Activate()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton1(Vector2.new(0, 0))
+        end
+    end)
+end
+
+-- ===== RAID =====
+local function startRaid()
+    pcall(function()
+        local raidNPC
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if (obj.Name:find("Raid") or obj.Name:find("Awaken") 
+                or obj.Name:find("Ancient")) and obj:FindFirstChild("Humanoid") then
+                raidNPC = obj; break
+            end
+        end
+        if raidNPC and raidNPC:FindFirstChild("Head") then
+            local hrp = getHRP()
+            if hrp then
+                hrp.CFrame = CFrame.new(raidNPC.Head.Position + Vector3.new(0, 0, 5))
+                task.wait(0.5)
+            end
+            for _, obj in pairs(raidNPC:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") then
+                    obj.HoldDuration = 0
+                    fireproximityprompt(obj)
+                    task.wait(0.3)
+                end
+            end
+        end
+    end)
+end
+
+-- ===== TRIBE =====
+local function getTribeNPC()
+    local nearest, dist = nil, math.huge
+    local hrp = getHRP()
+    if not hrp then return nil end
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
+               and obj:FindFirstChild("Head") then
+                local n = obj.Name
+                if n:find("Trial") or n:find("Elder") or n:find("Sensei") 
+                   or n:find("Cyborg") or n:find("Ghoul") or n:find("Mink") 
+                   or n:find("Fishman") or n:find("Skypiea") then
+                    local d = (obj.Head.Position - hrp.Position).Magnitude
+                    if d < dist then nearest, dist = obj, d end
+                end
+            end
+        end)
+    end
+    return nearest
+end
+
+local function doTribe()
+    local npc = getTribeNPC()
+    if not npc or not npc:FindFirstChild("Head") then return end
+    local hrp = getHRP()
+    if not hrp then return end
+    hrp.CFrame = CFrame.new(npc.Head.Position + Vector3.new(0, 0, 4))
+    task.wait(0.5)
+    pcall(function()
+        for _, obj in pairs(npc:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = 0
+                fireproximityprompt(obj)
+                task.wait(0.3)
+            end
+        end
+    end)
+end
+
+-- ===== LAG REDUCER =====
 local function reduceLag()
     pcall(function()
         Lighting.GlobalShadows = false
@@ -208,343 +505,224 @@ local function reduceLag()
     StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="✅ Đã giảm lag!"; Duration=3})
 end
 
--- ===== TÌM QUÁI =====
-local function getMonster()
-    local nearest, dist = nil, math.huge
-    local hrp = getHRP()
-    if not hrp then return nil end
-    for _, obj in pairs(Workspace:GetChildren()) do
-        pcall(function()
-            if obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-                if obj.Humanoid.Health > 0 and obj ~= LocalPlayer.Character then
-                    local n = obj.Name
-                    if not n:find("NPC") and not n:find("Barber") and not n:find("Shop") 
-                       and not Players:GetPlayerFromCharacter(obj) then
-                        local d = (obj.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if d < dist then nearest, dist = obj, d end
-                    end
-                end
-            end
-        end)
-    end
-    return nearest
-end
-
--- ===== TÌM RƯƠNG =====
-local function getChest()
-    local nearest, dist = nil, math.huge
-    local hrp = getHRP()
-    if not hrp then return nil end
-    for _, obj in pairs(Workspace:GetChildren()) do
-        pcall(function()
-            if obj.Name:find("Chest") then
-                local part = obj:FindFirstChild("HumanoidRootPart") or (obj:IsA("BasePart") and obj)
-                if part then
-                    local d = (part.Position - hrp.Position).Magnitude
-                    if d < dist then nearest, dist = obj, d end
-                end
-            end
-        end)
-    end
-    return nearest
-end
-
--- ===== TÌM TRÁI RƠI =====
-local function getFruitDrop()
-    local nearest, dist = nil, math.huge
-    local hrp = getHRP()
-    if not hrp then return nil end
-
-    for _, obj in pairs(Workspace:GetChildren()) do
-        pcall(function()
-            if (obj:IsA("Tool") or obj:IsA("Model")) 
-               and (obj.Name:find("Fruit") or obj.Name:find("fruit")) then
-                local part = obj:FindFirstChild("Handle") 
-                          or obj:FindFirstChild("HumanoidRootPart")
-                          or obj:FindFirstChildWhichIsA("BasePart")
-                if part then
-                    local d = (part.Position - hrp.Position).Magnitude
-                    if d < dist then nearest, dist = obj, d end
-                end
-            end
-        end)
-    end
-
-    local fruitsFolder = Workspace:FindFirstChild("Fruits")
-    if fruitsFolder then
-        for _, obj in pairs(fruitsFolder:GetChildren()) do
-            pcall(function()
-                local part = obj:FindFirstChild("Handle") 
-                          or obj:FindFirstChildWhichIsA("BasePart")
-                if part then
-                    local d = (part.Position - hrp.Position).Magnitude
-                    if d < dist then nearest, dist = obj, d end
-                end
-            end)
-        end
-    end
-
-    return nearest
-end
-
-local function pickUpFruit(fruit)
-    if not fruit then return end
-    pcall(function()
-        local part = fruit:FindFirstChild("Handle") 
-                  or fruit:FindFirstChildWhichIsA("BasePart")
-        if part then
-            teleportTo(part.Position)
-            task.wait(0.2)
-            if firetouchinterest and getHRP() then
-                firetouchinterest(getHRP(), part, 0)
-                task.wait(0.1)
-                firetouchinterest(getHRP(), part, 1)
-            end
-        end
-    end)
-end
-
--- ===== TÌM NPC QUEST =====
-local function getQuestNPC()
-    local nearest, dist = nil, math.huge
-    local hrp = getHRP()
-    if not hrp then return nil end
-    for _, obj in pairs(Workspace:GetChildren()) do
-        pcall(function()
-            if obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
-                local n = obj.Name
-                if n:find("Quest") or n:find("Master") or n:find("Captain") 
-                   or n:find("Bartender") or n:find("King") or n:find("Sword") 
-                   or n:find("Blade") or n:find("Hat") or n:find("Citizen") then
-                    local d = (obj.Head.Position - hrp.Position).Magnitude
-                    if d < dist then nearest, dist = obj, d end
-                end
-            end
-        end)
-    end
-    return nearest
-end
-
-local function doQuest()
-    local npc = getQuestNPC()
-    if not npc then return end
-    local hrp = getHRP()
-    if not hrp then return end
-    hrp.CFrame = CFrame.new(npc.Head.Position + Vector3.new(0, 0, 3))
-    task.wait(0.3)
-    pcall(function()
-        for _, obj in pairs(npc:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = 0
-                fireproximityprompt(obj)
-            end
-        end
-    end)
-    attack()
-end
-
--- ===== GACHA =====
-local function doGacha()
-    pcall(function()
-        local dealer = nil
-        for _, obj in pairs(Workspace:GetChildren()) do
-            if obj.Name:find("Dealer") then dealer = obj break end
-        end
-        if dealer and dealer:FindFirstChild("HumanoidRootPart") then
-            local hrp = getHRP()
-            if hrp then
-                hrp.CFrame = CFrame.new(dealer.HumanoidRootPart.Position + Vector3.new(0, 0, 5))
-                task.wait(0.5)
-            end
-            for _, obj in pairs(dealer:GetDescendants()) do
-                if obj:IsA("ProximityPrompt") then
-                    obj.HoldDuration = 0
-                    fireproximityprompt(obj)
-                    task.wait(0.3)
-                end
-            end
-            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-            if remotes then
-                local comm = remotes:FindFirstChild("CommF_")
-                if comm then comm:InvokeServer("BuyFruit") end
-            end
-        end
-    end)
-end
-
--- ===== LƯU TRÁI =====
-local function storeFruits()
-    pcall(function()
-        local backpack = LocalPlayer:FindFirstChild("Backpack")
-        if not backpack then return end
-        for _, tool in pairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") and tool:FindFirstChild("Handle") then
-                local isFruit = false
-                if tool:FindFirstChild("Fruit") or tool.Name:find("Fruit") then isFruit = true end
-                for _, tag in pairs(tool:GetChildren()) do
-                    if tag:IsA("StringValue") and (tag.Name == "Fruit" or tag.Name == "Type") then
-                        isFruit = true
-                    end
-                end
-                if isFruit then
-                    local storage = Workspace:FindFirstChild("Fruit Storage") 
-                                 or Workspace:FindFirstChild("Chest")
-                    if storage then
-                        local part = storage:FindFirstChild("HumanoidRootPart") 
-                                    or (storage:IsA("BasePart") and storage)
-                        if part then
-                            local hrp = getHRP()
-                            if hrp then
-                                hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 0, 5))
-                                task.wait(0.3)
-                                tool.Parent = storage
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- ===== MASTERY =====
-local function getEquippedWeapon()
-    local char = LocalPlayer.Character
-    if not char then return nil end
-    return char:FindFirstChildOfClass("Tool")
-end
-
-local function masteryAttack()
-    pcall(function()
-        if MasteryMethod == "Click" then
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton1(Vector2.new(0, 0))
-        end
-        if MasteryMethod == "Skill" then
-            local tool = getEquippedWeapon()
-            if tool then tool:Activate() end
-        end
-    end)
-end
-
--- ===== RAID =====
-local function startRaid()
-    pcall(function()
-        local raidNPC = nil
-        for _, obj in pairs(Workspace:GetChildren()) do
-            if obj.Name:find("Raid") or obj.Name:find("Awaken") 
-               or obj.Name:find("Ancient") or obj.Name:find("Cursed") then
-                if obj:FindFirstChild("Humanoid") then
-                    raidNPC = obj
-                    break
-                end
-            end
-        end
-
-        if raidNPC and raidNPC:FindFirstChild("Head") then
-            local hrp = getHRP()
-            if hrp then
-                hrp.CFrame = CFrame.new(raidNPC.Head.Position + Vector3.new(0, 0, 5))
-                task.wait(0.5)
-            end
-            for _, obj in pairs(raidNPC:GetDescendants()) do
-                if obj:IsA("ProximityPrompt") then
-                    obj.HoldDuration = 0
-                    fireproximityprompt(obj)
-                    task.wait(0.3)
-                end
-            end
-            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-            if remotes then
-                local comm = remotes:FindFirstChild("CommF_")
-                if comm then
-                    pcall(function() comm:InvokeServer("RequestRaid") end)
-                    pcall(function() comm:InvokeServer("Raid", "Start") end)
-                end
-            end
-        end
-    end)
-end
-
-local function doRaid()
-    if not AutoRaid then return end
-    local hasChip = false
-    local backpack = LocalPlayer:FindFirstChild("Backpack")
-    if backpack then
-        for _, item in pairs(backpack:GetChildren()) do
-            if item.Name:find("Chip") or item.Name:find("Raid") then
-                hasChip = true
-                break
-            end
-        end
-    end
-    if hasChip then
-        startRaid()
-        task.wait(3)
-        for _ = 1, 600 do
-            if not AutoRaid then break end
+-- ===== SPEED FARM =====
+local function speedFarmLoop()
+    task.spawn(function()
+        while Toggles.SpeedFarm do
             local m = getMonster()
             if m and m:FindFirstChild("HumanoidRootPart") then
-                teleportTo(m.HumanoidRootPart.Position)
-                attack()
+                local hrp = getHRP()
+                if hrp then
+                    hrp.CFrame = CFrame.new(m.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+                    for i = 1, 5 do attack() end
+                end
+            end
+            task.wait(0.02)
+        end
+    end)
+end
+
+-- ===== AURA KILL =====
+local function createAuraHitbox()
+    local hrp = getHRP()
+    if not hrp then return end
+    local old = hrp:FindFirstChild("HelloHub_AuraHitbox")
+    if old then old:Destroy() end
+    local hitbox = Instance.new("Part")
+    hitbox.Name = "HelloHub_AuraHitbox"
+    hitbox.Shape = Enum.PartType.Cylinder
+    hitbox.Size = Vector3.new(1, AuraRange * 2, AuraRange * 2)
+    hitbox.Anchored = true
+    hitbox.CanCollide = false
+    hitbox.Material = Enum.Material.ForceField
+    hitbox.Color = Colors.Accent
+    hitbox.Transparency = 0.85
+    hitbox.Parent = hrp
+    task.spawn(function()
+        while Toggles.AuraKill and hitbox.Parent do
+            local h = getHRP()
+            if h then
+                hitbox.CFrame = CFrame.new(h.Position) * CFrame.Angles(0, 0, math.rad(90))
             end
             task.wait(0.1)
         end
-    end
+        if hitbox then hitbox:Destroy() end
+    end)
 end
 
--- ===== TRIBE =====
-local function getTribeNPC()
-    local nearest, dist = nil, math.huge
+local function getMonstersInRange(range)
+    local monsters = {}
     local hrp = getHRP()
-    if not hrp then return nil end
-    for _, obj in pairs(Workspace:GetChildren()) do
+    if not hrp then return monsters end
+    for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
-            if obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
-                local n = obj.Name
-                if n:find("Trial") or n:find("Master") or n:find("Elder") 
-                   or n:find("Sensei") or n:find("Temple") or n:find("Fighter") 
-                   or n:find("Cyborg") or n:find("Ghoul") or n:find("Mink") 
-                   or n:find("Fishman") or n:find("Skypiea") or n:find("Human") then
-                    local d = (obj.Head.Position - hrp.Position).Magnitude
-                    if d < dist then nearest, dist = obj, d end
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
+               and obj:FindFirstChild("HumanoidRootPart") then
+                if obj.Humanoid.Health > 0 and obj ~= LocalPlayer.Character then
+                    local n = obj.Name
+                    if not n:find("NPC") and not n:find("Barber") and not n:find("Shop")
+                       and not n:find("Dealer") and not Players:GetPlayerFromCharacter(obj) then
+                        local d = (obj.HumanoidRootPart.Position - hrp.Position).Magnitude
+                        if d <= range then table.insert(monsters, obj) end
+                    end
                 end
             end
         end)
     end
-    return nearest
+    return monsters
 end
 
-local function doTribeQuest()
-    local npc = getTribeNPC()
-    if not npc then return end
-    local hrp = getHRP()
-    if not hrp then return end
-    hrp.CFrame = CFrame.new(npc.Head.Position + Vector3.new(0, 0, 4))
-    task.wait(0.5)
-    pcall(function()
-        for _, obj in pairs(npc:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = 0
-                fireproximityprompt(obj)
-                task.wait(0.3)
+local function auraKillLoop()
+    task.spawn(function()
+        createAuraHitbox()
+        while Toggles.AuraKill do
+            local monsters = getMonstersInRange(AuraRange)
+            for _, m in ipairs(monsters) do
+                if not Toggles.AuraKill then break end
+                for i = 1, 3 do attack() end
             end
+            task.wait(0.05)
+        end
+        local hrp = getHRP()
+        if hrp then
+            local hb = hrp:FindFirstChild("HelloHub_AuraHitbox")
+            if hb then hb:Destroy() end
         end
     end)
-    for _ = 1, 100 do
-        if not AutoTribe then break end
-        local m = getMonster()
-        if m and m:FindFirstChild("HumanoidRootPart") then
-            teleportTo(m.HumanoidRootPart.Position)
-            attack()
+end
+
+-- ===== AUTO STAT =====
+local function addStat(statName)
+    pcall(function()
+        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+        if remotes then
+            local commF = remotes:FindFirstChild("CommF_")
+            if commF then commF:InvokeServer("AddPoint", statName) end
         end
-        task.wait(0.2)
+    end)
+end
+
+local function autoStatLoop()
+    task.spawn(function()
+        while Toggles.AutoStat do
+            if getStatPoints() > 0 then addStat(StatChoice) end
+            task.wait(1)
+        end
+    end)
+end
+
+-- ===== AUTO NEW QUEST =====
+local function autoNewQuestLoop()
+    task.spawn(function()
+        while Toggles.AutoNewQuest do
+            local level = getPlayerLevel()
+            if level > LastQuestLevel then
+                LastQuestLevel = level
+                StarterGui:SetCore("SendNotification", {
+                    Title = "HelloHub";
+                    Text = "📜 Level " .. level .. "! Đang tìm quest mới...";
+                    Duration = 3;
+                })
+            end
+            doQuestFixed()
+            task.wait(5)
+        end
+    end)
+end
+
+-- ===== CHECK SHOP =====
+local function checkShop()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return end
+    local foundItems = {}
+    for _, gui in pairs(playerGui:GetChildren()) do
+        pcall(function()
+            for _, obj in pairs(gui:GetDescendants()) do
+                if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                    local txt = string.lower(obj.Text or "")
+                    if txt:find("buy") or txt:find("purchase") or txt:find("mua") then
+                        table.insert(foundItems, obj.Text)
+                    end
+                end
+            end
+        end)
     end
+    if #foundItems > 0 then
+        StarterGui:SetCore("SendNotification", {
+            Title = "HelloHub Shop"; 
+            Text = "🛒 Shop có " .. #foundItems .. " item!"; 
+            Duration = 5;
+        })
+    else
+        StarterGui:SetCore("SendNotification", {
+            Title = "HelloHub"; Text = "🛒 Không thấy shop nào mở!"; Duration = 5;
+        })
+    end
+end
+
+-- ===== SERVER HOP =====
+local function serverHop()
+    pcall(function()
+        local servers = {}
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId 
+                  .. "/servers/Public?sortOrder=Asc&limit=100"
+        local success, result = pcall(function() return game:HttpGet(url) end)
+        if success and result then
+            local data = HttpService:JSONDecode(result)
+            for _, server in pairs(data.data) do
+                if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    table.insert(servers, server.id)
+                end
+            end
+        end
+        if #servers > 0 then
+            local newServer = servers[math.random(1, #servers)]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, newServer, LocalPlayer)
+        end
+    end)
+end
+
+-- ===== AUTO HOP MYTHICAL =====
+local function playMythicalSound()
+    pcall(function()
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://131961136"
+        sound.Volume = 2
+        sound.Parent = LocalPlayer:FindFirstChild("PlayerGui")
+        sound:Play()
+        task.wait(3)
+        sound:Destroy()
+    end)
+end
+
+local function autoHopForMythical()
+    local mythical = getMythicalFruitOnMap()
+    
+    if mythical then
+        StarterGui:SetCore("SendNotification", {
+            Title = "✨ HELLOHUB MYTHICAL ✨";
+            Text = "Phát hiện " .. mythical.Name .. "! Không đổi server.";
+            Duration = 5;
+        })
+        playMythicalSound()
+        return
+    end
+    
+    StarterGui:SetCore("SendNotification", {
+        Title = "HelloHub";
+        Text = "🔄 Không có Mythical. Đang đổi server...";
+        Duration = 3;
+    })
+    
+    task.wait(1)
+    serverHop()
 end
 
 -- ===== VÒNG LẶP CHÍNH =====
 RunService.Heartbeat:Connect(function()
-    if AutoFarm then
+    if not getHRP() then return end
+
+    if Toggles.AutoFarm then
         local m = getMonster()
         if m and m:FindFirstChild("HumanoidRootPart") then
             teleportTo(m.HumanoidRootPart.Position)
@@ -552,25 +730,20 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    if AutoChest then
+    if Toggles.AutoChest then
         local c = getChest()
         if c then
-            local p = c:FindFirstChild("HumanoidRootPart") or (c:IsA("BasePart") and c)
+            local p = c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart")
             if p then teleportTo(p.Position) end
         end
     end
 
-    if AutoFruit then
-        local f = getFruitDrop()
-        if f then teleportTo((f:FindFirstChild("Handle") or f:FindFirstChildWhichIsA("BasePart")).Position) end
-    end
-
-    if AutoFruitDrop then
+    if Toggles.AutoFruitDrop then
         local f = getFruitDrop()
         if f then pickUpFruit(f) end
     end
 
-    if AutoMastery then
+    if Toggles.AutoMastery then
         local m = getMonster()
         if m and m:FindFirstChild("HumanoidRootPart") then
             local hrp = getHRP()
@@ -583,148 +756,159 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ===== TẠO NÚT =====
-makeLabel("=== TỐI ƯU ===")
-makeButton("🚀 GIẢM LAG", Color3.fromRGB(40, 180, 90), reduceLag)
-
-makeLabel("=== AUTO FARM ===")
-local farmBtn = makeButton("⚔️ AUTO FARM: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoFarm = not AutoFarm
-    farmBtn.Text = AutoFarm and "⚔️ AUTO FARM: ON" or "⚔️ AUTO FARM: OFF"
-    farmBtn.BackgroundColor3 = AutoFarm and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
+-- ===== LOOP RIÊNG =====
+task.spawn(function()
+    while true do
+        task.wait(3)
+        if Toggles.AutoQuest then doQuestFixed() end
+    end
 end)
 
-local chestBtn = makeButton("📦 AUTO CHEST: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoChest = not AutoChest
-    chestBtn.Text = AutoChest and "📦 AUTO CHEST: ON" or "📦 AUTO CHEST: OFF"
-    chestBtn.BackgroundColor3 = AutoChest and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
+task.spawn(function()
+    while true do
+        task.wait(2)
+        if Toggles.AutoGacha then doGacha() end
+    end
 end)
 
-local masteryBtn = makeButton("⚔️ AUTO MASTERY: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoMastery = not AutoMastery
-    masteryBtn.Text = AutoMastery and "⚔️ AUTO MASTERY: ON" or "⚔️ AUTO MASTERY: OFF"
-    masteryBtn.BackgroundColor3 = AutoMastery and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
+task.spawn(function()
+    while true do
+        task.wait(5)
+        if Toggles.AutoStoreFruit then storeFruits() end
+    end
 end)
 
-makeLabel("=== TRÁI ===")
-local fruitBtn = makeButton("🍎 AUTO FRUIT: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoFruit = not AutoFruit
-    fruitBtn.Text = AutoFruit and "🍎 AUTO FRUIT: ON" or "🍎 AUTO FRUIT: OFF"
-    fruitBtn.BackgroundColor3 = AutoFruit and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
+task.spawn(function()
+    while true do
+        task.wait(5)
+        if Toggles.AutoRaid then startRaid() end
+    end
 end)
 
-local fruitDropBtn = makeButton("🍎 AUTO NHẶT TRÁI: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoFruitDrop = not AutoFruitDrop
-    fruitDropBtn.Text = AutoFruitDrop and "🍎 AUTO NHẶT TRÁI: ON" or "🍎 AUTO NHẶT TRÁI: OFF"
-    fruitDropBtn.BackgroundColor3 = AutoFruitDrop and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        if Toggles.AutoTribe then doTribe() end
+    end
 end)
 
-makeButton("🎰 GACHA 1 LẦN", Color3.fromRGB(180, 80, 200), doGacha)
+-- ===== QUẢN LÝ LOOP =====
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if Toggles.SpeedFarm and not _G._speedRun then
+            _G._speedRun = true
+            speedFarmLoop()
+        elseif not Toggles.SpeedFarm then
+            _G._speedRun = false
+        end
+        if Toggles.AuraKill and not _G._auraRun then
+            _G._auraRun = true
+            auraKillLoop()
+        elseif not Toggles.AuraKill then
+            _G._auraRun = false
+        end
+        if Toggles.AutoStat and not _G._statRun then
+            _G._statRun = true
+            autoStatLoop()
+        elseif not Toggles.AutoStat then
+            _G._statRun = false
+        end
+        if Toggles.AutoNewQuest and not _G._newQuestRun then
+            _G._newQuestRun = true
+            autoNewQuestLoop()
+        elseif not Toggles.AutoNewQuest then
+            _G._newQuestRun = false
+        end
+        if Toggles.AutoHopMythical and not _G._hopRun then
+            _G._hopRun = true
+            task.spawn(function()
+                while Toggles.AutoHopMythical do
+                    autoHopForMythical()
+                    task.wait(30)
+                end
+            end)
+        elseif not Toggles.AutoHopMythical then
+            _G._hopRun = false
+        end
+    end
+end)
 
-local gachaBtn = makeButton("🎰 AUTO GACHA: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoGacha = not AutoGacha
-    gachaBtn.Text = AutoGacha and "🎰 AUTO GACHA: ON" or "🎰 AUTO GACHA: OFF"
-    gachaBtn.BackgroundColor3 = AutoGacha and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
-    if AutoGacha then
-        task.spawn(function()
-            while AutoGacha do
-                doGacha()
-                task.wait(2)
+-- ============================================================
+-- ===== GUI =====
+-- ============================================================
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HelloHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Nút mở GUI (kéo thả)
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
+ToggleBtn.Position = UDim2.new(0, 15, 0.5, -27)
+ToggleBtn.BackgroundColor3 = Colors.Accent
+ToggleBtn.Text = "🍎"
+ToggleBtn.TextScaled = true
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.Active = true
+ToggleBtn.Visible = false
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 12)
+
+local dragging, dragStart, startPos, dragDistance = false, nil, nil, 0
+ToggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 
+       or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = ToggleBtn.Position
+        dragDistance = 0
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+                ToggleBtn.BackgroundColor3 = Colors.Accent
             end
         end)
     end
 end)
 
-makeButton("📥 LƯU TRÁI 1 LẦN", Color3.fromRGB(40, 130, 200), storeFruits)
-
-local storeBtn = makeButton("📥 AUTO LƯU TRÁI: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoStoreFruit = not AutoStoreFruit
-    storeBtn.Text = AutoStoreFruit and "📥 AUTO LƯU TRÁI: ON" or "📥 AUTO LƯU TRÁI: OFF"
-    storeBtn.BackgroundColor3 = AutoStoreFruit and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
-    if AutoStoreFruit then
-        task.spawn(function()
-            while AutoStoreFruit do
-                storeFruits()
-                task.wait(5)
-            end
-        end)
+ToggleBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement 
+       or input.UserInputType == Enum.UserInputType.Touch then
+        if dragging then
+            local delta = input.Position - dragStart
+            dragDistance = math.abs(delta.X) + math.abs(delta.Y)
+            ToggleBtn.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+            ToggleBtn.BackgroundColor3 = Colors.Accent:Lerp(Color3.new(1,1,1), 0.3)
+        end
     end
 end)
 
-makeLabel("=== QUEST ===")
-makeButton("📜 NHẬN QUEST 1 LẦN", Color3.fromRGB(200, 130, 40), doQuest)
+-- Main Frame
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 620, 0, 380)
+Main.Position = UDim2.new(0.5, -310, 0.5, -190)
+Main.BackgroundColor3 = Colors.Bg
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", Main)
+stroke.Color = Colors.Accent
+stroke.Thickness = 2
 
-local questBtn = makeButton("📜 AUTO QUEST: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoQuest = not AutoQuest
-    questBtn.Text = AutoQuest and "📜 AUTO QUEST: ON" or "📜 AUTO QUEST: OFF"
-    questBtn.BackgroundColor3 = AutoQuest and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
-    if AutoQuest then
-        task.spawn(function()
-            while AutoQuest do
-                doQuest()
-                task.wait(3)
-            end
-        end)
-    end
-end)
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundColor3 = Colors.Accent
+Header.BorderSizePixel = 0
+Header.Parent = Main
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
 
-makeLabel("=== RAID & TRIBE ===")
-makeButton("⚔️ RAID 1 LẦN", Color3.fromRGB(200, 130, 40), startRaid)
-
-local raidBtn = makeButton("⚔️ AUTO RAID: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoRaid = not AutoRaid
-    raidBtn.Text = AutoRaid and "⚔️ AUTO RAID: ON" or "⚔️ AUTO RAID: OFF"
-    raidBtn.BackgroundColor3 = AutoRaid and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
-    if AutoRaid then
-        task.spawn(function()
-            while AutoRaid do
-                doRaid()
-                task.wait(5)
-            end
-        end)
-    end
-end)
-
-makeButton("👤 TRIBE 1 LẦN", Color3.fromRGB(40, 130, 200), doTribeQuest)
-
-local tribeBtn = makeButton("👤 AUTO TRIBE: OFF", Color3.fromRGB(150, 50, 50), function()
-    AutoTribe = not AutoTribe
-    tribeBtn.Text = AutoTribe and "👤 AUTO TRIBE: ON" or "👤 AUTO TRIBE: OFF"
-    tribeBtn.BackgroundColor3 = AutoTribe and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(150, 50, 50)
-    if AutoTribe then
-        task.spawn(function()
-            while AutoTribe do
-                doTribeQuest()
-                task.wait(3)
-            end
-        end)
-    end
-end)
-
-makeLabel("=== KHÁC ===")
-makeButton("🔄 RESET CHARACTER", Color3.fromRGB(200, 130, 40), function()
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") then
-        char.Humanoid.Health = 0
-    end
-end)
-
--- ===== ẨN/HIỆN GUI =====
-MinBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    ToggleBtn.Visible = true
-end)
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = true
-    ToggleBtn.Visible = false
-end)
-
--- ===== THÔNG BÁO =====
-StarterGui:SetCore("SendNotification", {
-    Title = "HelloHub - Blox Fruits FULL";
-    Text = "✅ Đã load! Tất cả tính năng sẵn sàng.";
-    Duration = 5;
-})
-
-print("[HelloHub] Blox Fruits FULL loaded!")
+local Title = Instance.new("
