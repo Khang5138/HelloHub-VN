@@ -1,11 +1,9 @@
 --[[
     ╔══════════════════════════════════════════════╗
-    ║   HelloHub V7 FINAL - Blox Fruits            ║
-    ║   Tác giả: Khang5138                         ║
-    ║   Full Anti-Ban + Auto Mythical + 20 features║
+    ║   HelloHub - Blox Fruits                     ║
+    ║   Toggle Switch + Kéo logo + Farm riêng biệt ║
     ╚══════════════════════════════════════════════╝
     
-    Cách dùng:
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Khang5138/HelloHub-VN/main/HelloHub.lua"))()
 --]]
 
@@ -35,30 +33,25 @@ if not isBF then
     return
 end
 
-print("[HelloHub V7] Loaded!")
+print("[HelloHub V8] Loaded!")
 
 -- ============================================================
 -- ===== ANTI-BAN MODULE =====
 -- ============================================================
 local AntiBan = {
-    Enabled = true,
-    RandomDelay = true,
-    HumanLikeClick = true,
-    SafeTeleport = true,
-    AutoBreak = true,
-    FakeActivity = true,
-    BreakInterval = 900,
-    BreakDuration = 60,
+    Enabled = true, RandomDelay = true, HumanLikeClick = true,
+    SafeTeleport = true, AutoBreak = true, FakeActivity = true,
+    BreakInterval = 900, BreakDuration = 60,
 }
 
 -- ===== BIẾN TOÀN CỤC =====
 local Toggles = {
-    AutoFarm = false, AutoChest = false, AutoFruitDrop = false,
-    AutoMastery = false, AutoQuest = false, AutoGacha = false,
-    AutoStoreFruit = false, AutoRaid = false, AutoTribe = false,
-    SpeedFarm = false, AuraKill = false, AutoStat = false,
-    AutoNewQuest = false, AutoHopMythical = false,
-    AntiBanEnabled = true, AntiBanRandomDelay = true, 
+    AutoFarm = false, SpeedFarm = false, ChestFarm = false,
+    AutoFruitDrop = false, AutoMastery = false, AutoQuest = false,
+    AutoGacha = false, AutoStoreFruit = false, AutoRaid = false,
+    AutoTribe = false, AuraKill = false, AutoStat = false,
+    AutoNewQuest = false, MythicalHop = false,
+    AntiBanEnabled = true, AntiBanRandomDelay = true,
     AntiBanHumanClick = true, AntiBanSafeTeleport = true,
     AntiBanAutoBreak = true, AntiBanFakeActivity = true,
 }
@@ -88,6 +81,8 @@ local Colors = {
     Sub = Color3.fromRGB(150, 150, 170),
     Mythical = Color3.fromRGB(180, 80, 200),
     AntiBan = Color3.fromRGB(0, 200, 100),
+    SwitchOff = Color3.fromRGB(70, 70, 85),
+    SwitchOn = Color3.fromRGB(0, 200, 100),
 }
 
 -- ===== HÀM TIỆN ÍCH =====
@@ -95,17 +90,14 @@ local function getHRP()
     local c = LocalPlayer.Character
     return c and c:FindFirstChild("HumanoidRootPart")
 end
-
 local function getHumanoid()
     local c = LocalPlayer.Character
     return c and c:FindFirstChildOfClass("Humanoid")
 end
-
 local function teleportTo(pos)
     local hrp = getHRP()
     if hrp then hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0)) end
 end
-
 local function attack()
     pcall(function()
         VirtualUser:CaptureController()
@@ -113,40 +105,26 @@ local function attack()
     end)
 end
 
--- ===== ANTI-BAN: Random delay =====
+-- ===== ANTI-BAN HELPERS =====
 local function randomDelay(min, max)
     if not AntiBan.RandomDelay then return end
-    local d = math.random(min * 1000, max * 1000) / 1000
-    task.wait(d)
+    task.wait(math.random(min * 1000, max * 1000) / 1000)
 end
-
--- ===== ANTI-BAN: Human-like click =====
 local function humanClick()
-    if not AntiBan.HumanLikeClick then
-        attack()
-        return
-    end
+    if not AntiBan.HumanLikeClick then attack() return end
     local clicks = math.random(1, 3)
     for i = 1, clicks do
         attack()
         task.wait(math.random(20, 80) / 1000)
     end
 end
-
--- ===== ANTI-BAN: Safe teleport =====
 local function safeTeleport(targetPos)
-    if not AntiBan.SafeTeleport then
-        teleportTo(targetPos)
-        return
-    end
+    if not AntiBan.SafeTeleport then teleportTo(targetPos) return end
     local hrp = getHRP()
     if not hrp then return end
     local startPos = hrp.Position
     local distance = (targetPos - startPos).Magnitude
-    if distance < 50 then
-        teleportTo(targetPos)
-        return
-    end
+    if distance < 50 then teleportTo(targetPos) return end
     local steps = math.random(3, 5)
     for i = 1, steps do
         local alpha = i / steps
@@ -155,8 +133,6 @@ local function safeTeleport(targetPos)
         task.wait(math.random(30, 80) / 1000)
     end
 end
-
--- ===== ANTI-BAN: Fake Activity =====
 local function startFakeActivity()
     task.spawn(function()
         while AntiBan.Enabled do
@@ -164,46 +140,29 @@ local function startFakeActivity()
             if AntiBan.FakeActivity then
                 local hrp = getHRP()
                 if hrp then
-                    local offset = Vector3.new(
-                        math.random(-2, 2), 0, math.random(-2, 2)
-                    )
-                    hrp.CFrame = hrp.CFrame + offset
+                    hrp.CFrame = hrp.CFrame + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2))
                 end
             end
         end
     end)
 end
-
--- ===== ANTI-BAN: Auto Break =====
 local function startAutoBreak()
     task.spawn(function()
         while AntiBan.Enabled do
             task.wait(AntiBan.BreakInterval)
             if AntiBan.AutoBreak then
-                StarterGui:SetCore("SendNotification", {
-                    Title = "🛡️ Anti-Ban";
-                    Text = "Nghỉ " .. AntiBan.BreakDuration .. "s...";
-                    Duration = 5;
-                })
+                StarterGui:SetCore("SendNotification", {Title="🛡️"; Text="Nghỉ " .. AntiBan.BreakDuration .. "s..."; Duration=5})
                 local saved = {}
                 for k, v in pairs(Toggles) do
-                    if k:find("AntiBan") == nil then
-                        saved[k] = v
-                        Toggles[k] = false
-                    end
+                    if not k:find("AntiBan") then saved[k] = v; Toggles[k] = false end
                 end
                 task.wait(AntiBan.BreakDuration)
                 for k, v in pairs(saved) do Toggles[k] = v end
-                StarterGui:SetCore("SendNotification", {
-                    Title = "🛡️ Anti-Ban";
-                    Text = "Đã nghỉ xong!";
-                    Duration = 3;
-                })
+                StarterGui:SetCore("SendNotification", {Title="🛡️"; Text="Đã nghỉ xong!"; Duration=3})
             end
         end
     end)
 end
-
 startFakeActivity()
 startAutoBreak()
 
@@ -222,7 +181,6 @@ local function getPlayerLevel()
     end
     return 0
 end
-
 local function getStatPoints()
     local stats = LocalPlayer:FindFirstChild("Data")
     if stats then
@@ -257,6 +215,7 @@ local function getMonster()
     return nearest
 end
 
+-- ===== TÌM RƯƠNG =====
 local function getChest()
     local nearest, dist = nil, math.huge
     local hrp = getHRP()
@@ -339,17 +298,12 @@ local function getQuestNPCFixed()
     local nearest, dist = nil, math.huge
     local hrp = getHRP()
     if not hrp then return nil end
-    local questNPCNames = {
-        "Quest", "Master", "Captain", "Bartender", "Sword", "Blade", 
-        "Citizen", "King", "Baratie", "Barto", "Gan Fall", "Usopp",
-        "Nami", "Buggy", "Smoker", "Tashigi"
-    }
+    local names = {"Quest","Master","Captain","Bartender","Sword","Blade","Citizen","King","Baratie","Barto","Gan Fall","Usopp","Nami","Buggy","Smoker","Tashigi"}
     for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
-            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
-               and obj:FindFirstChild("Head") then
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
                 local n = obj.Name
-                for _, validName in ipairs(questNPCNames) do
+                for _, validName in ipairs(names) do
                     if n:find(validName) then
                         local d = (obj.Head.Position - hrp.Position).Magnitude
                         if d < dist then nearest, dist = obj, d end
@@ -396,9 +350,7 @@ local function doGacha()
                 pcall(function() commF:InvokeServer("Cousin", "BuyFruit") end)
                 task.wait(0.2)
             end
-            if commE then
-                pcall(function() commE:InvokeServer("BuyFruit") end)
-            end
+            if commE then pcall(function() commE:InvokeServer("BuyFruit") end) end
         end
         local dealer
         for _, obj in pairs(Workspace:GetDescendants()) do
@@ -461,22 +413,19 @@ local function getEquippedWeapon()
 end
 
 local function getMasteryWeapon()
-    if MasteryWeapon == "Nearest" then
-        return getEquippedWeapon()
-    else
-        local backpack = LocalPlayer:FindFirstChild("Backpack")
-        local char = LocalPlayer.Character
-        if char then
-            for _, t in pairs(char:GetChildren()) do
-                if t:IsA("Tool") and t.Name == MasteryWeapon then return t end
-            end
+    if MasteryWeapon == "Nearest" then return getEquippedWeapon() end
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    local char = LocalPlayer.Character
+    if char then
+        for _, t in pairs(char:GetChildren()) do
+            if t:IsA("Tool") and t.Name == MasteryWeapon then return t end
         end
-        if backpack then
-            for _, t in pairs(backpack:GetChildren()) do
-                if t:IsA("Tool") and t.Name == MasteryWeapon then
-                    t.Parent = char
-                    return t
-                end
+    end
+    if backpack then
+        for _, t in pairs(backpack:GetChildren()) do
+            if t:IsA("Tool") and t.Name == MasteryWeapon then
+                t.Parent = char
+                return t
             end
         end
     end
@@ -486,10 +435,7 @@ end
 local function masteryAttack()
     pcall(function()
         local tool = getMasteryWeapon()
-        if tool then
-            tool:Activate()
-            humanClick()
-        end
+        if tool then tool:Activate(); humanClick() end
     end)
 end
 
@@ -525,8 +471,7 @@ local function getTribeNPC()
     if not hrp then return nil end
     for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
-            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
-               and obj:FindFirstChild("Head") then
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
                 local n = obj.Name
                 if n:find("Trial") or n:find("Elder") or n:find("Sensei") 
                    or n:find("Cyborg") or n:find("Ghoul") or n:find("Mink") 
@@ -592,7 +537,22 @@ local function reduceLag()
     StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="✅ Đã giảm lag!"; Duration=3})
 end
 
--- ===== SPEED FARM =====
+-- ===== 3 LOOP FARM ĐỘC LẬP =====
+-- Auto Farm: bay đến quái + đánh chậm
+local function autoFarmLoop()
+    task.spawn(function()
+        while Toggles.AutoFarm do
+            local m = getMonster()
+            if m and m:FindFirstChild("HumanoidRootPart") then
+                safeTeleport(m.HumanoidRootPart.Position)
+                humanClick()
+            end
+            randomDelay(0.1, 0.2)
+        end
+    end)
+end
+
+-- Speed Farm: bay + đánh cực nhanh
 local function speedFarmLoop()
     task.spawn(function()
         while Toggles.SpeedFarm do
@@ -601,13 +561,30 @@ local function speedFarmLoop()
                 local hrp = getHRP()
                 if hrp then
                     safeTeleport(m.HumanoidRootPart.Position)
-                    for i = 1, 2 do
-                        humanClick()
-                        task.wait(math.random(30, 100) / 1000)
+                    for i = 1, 3 do
+                        attack()
+                        task.wait(math.random(20, 60) / 1000)
                     end
                 end
             end
-            randomDelay(0.05, 0.15)
+            randomDelay(0.03, 0.08)
+        end
+    end)
+end
+
+-- Chest Farm: chỉ bay đến rương, KHÔNG đánh quái
+local function chestFarmLoop()
+    task.spawn(function()
+        while Toggles.ChestFarm do
+            local c = getChest()
+            if c then
+                local p = c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart")
+                if p then
+                    safeTeleport(p.Position)
+                    task.wait(0.3)
+                end
+            end
+            randomDelay(0.3, 0.6)
         end
     end)
 end
@@ -646,8 +623,7 @@ local function getMonstersInRange(range)
     if not hrp then return monsters end
     for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
-            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") 
-               and obj:FindFirstChild("HumanoidRootPart") then
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
                 if obj.Humanoid.Health > 0 and obj ~= LocalPlayer.Character then
                     local n = obj.Name
                     if not n:find("NPC") and not n:find("Barber") and not n:find("Shop")
@@ -709,11 +685,7 @@ local function autoNewQuestLoop()
             local level = getPlayerLevel()
             if level > LastQuestLevel then
                 LastQuestLevel = level
-                StarterGui:SetCore("SendNotification", {
-                    Title = "HelloHub";
-                    Text = "📜 Level " .. level .. "! Tìm quest mới...";
-                    Duration = 3;
-                })
+                StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="📜 Level " .. level; Duration=3})
             end
             doQuestFixed()
             task.wait(5)
@@ -738,15 +710,9 @@ local function checkShop()
         end)
     end
     if #foundItems > 0 then
-        StarterGui:SetCore("SendNotification", {
-            Title = "HelloHub Shop"; 
-            Text = "🛒 Shop có " .. #foundItems .. " item!"; 
-            Duration = 5;
-        })
+        StarterGui:SetCore("SendNotification", {Title="HelloHub Shop"; Text="🛒 Shop có " .. #foundItems .. " item!"; Duration=5})
     else
-        StarterGui:SetCore("SendNotification", {
-            Title = "HelloHub"; Text = "🛒 Không thấy shop nào mở!"; Duration = 5;
-        })
+        StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="🛒 Không thấy shop!"; Duration=5})
     end
 end
 
@@ -754,32 +720,24 @@ local function serverHop()
     local now = tick()
     if now - LastHopTime < 35 then
         local wait = math.ceil(35 - (now - LastHopTime))
-        StarterGui:SetCore("SendNotification", {
-            Title = "🛡️ Anti-Ban";
-            Text = "Đợi " .. wait .. "s trước khi hop...";
-            Duration = 3;
-        })
+        StarterGui:SetCore("SendNotification", {Title="🛡️"; Text="Đợi " .. wait .. "s..."; Duration=3})
         return
     end
     LastHopTime = now
     pcall(function()
         local servers = {}
-        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId 
-                  .. "/servers/Public?sortOrder=Asc&limit=100"
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
         local success, result = pcall(function() return game:HttpGet(url) end)
         if success and result then
             local data = HttpService:JSONDecode(result)
             for _, server in pairs(data.data) do
-                if server.playing < server.maxPlayers 
-                   and server.id ~= game.JobId 
-                   and server.playing < 10 then
+                if server.playing < server.maxPlayers and server.id ~= game.JobId and server.playing < 10 then
                     table.insert(servers, server.id)
                 end
             end
         end
         if #servers > 0 then
-            local newServer = servers[math.random(1, #servers)]
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, newServer, LocalPlayer)
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], LocalPlayer)
         end
     end)
 end
@@ -796,22 +754,18 @@ local function playMythicalSound()
     end)
 end
 
-local function autoHopForMythical()
+local function doMythicalHop()
     local mythical = getMythicalFruitOnMap()
     if mythical then
         StarterGui:SetCore("SendNotification", {
             Title = "✨ MYTHICAL FOUND ✨";
-            Text = "Phát hiện " .. mythical.Name .. "! Không đổi server.";
+            Text = "Phát hiện " .. mythical.Name .. "!";
             Duration = 5;
         })
         playMythicalSound()
         return
     end
-    StarterGui:SetCore("SendNotification", {
-        Title = "HelloHub";
-        Text = "🔄 Không có Mythical. Đang đổi server...";
-        Duration = 3;
-    })
+    StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="🔄 Đang đổi server..."; Duration=3})
     task.wait(1)
     serverHop()
 end
@@ -819,28 +773,10 @@ end
 -- ===== VÒNG LẶP CHÍNH =====
 RunService.Heartbeat:Connect(function()
     if not getHRP() then return end
-
-    if Toggles.AutoFarm then
-        local m = getMonster()
-        if m and m:FindFirstChild("HumanoidRootPart") then
-            safeTeleport(m.HumanoidRootPart.Position)
-            humanClick()
-        end
-    end
-
-    if Toggles.AutoChest then
-        local c = getChest()
-        if c then
-            local p = c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart")
-            if p then safeTeleport(p.Position) end
-        end
-    end
-
     if Toggles.AutoFruitDrop then
         local f = getFruitDrop()
         if f then pickUpFruit(f) end
     end
-
     if Toggles.AutoMastery then
         local m = getMonster()
         if m and m:FindFirstChild("HumanoidRootPart") then
@@ -854,90 +790,66 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ===== LOOP RIÊNG =====
 task.spawn(function()
-    while true do
-        task.wait(3)
-        if Toggles.AutoQuest then doQuestFixed() end
-    end
+    while true do task.wait(3); if Toggles.AutoQuest then doQuestFixed() end end
 end)
-
 task.spawn(function()
-    while true do
-        task.wait(2)
-        if Toggles.AutoGacha then doGacha() end
-    end
+    while true do task.wait(2); if Toggles.AutoGacha then doGacha() end end
 end)
-
 task.spawn(function()
-    while true do
-        task.wait(5)
-        if Toggles.AutoStoreFruit then storeFruits() end
-    end
+    while true do task.wait(5); if Toggles.AutoStoreFruit then storeFruits() end end
 end)
-
 task.spawn(function()
-    while true do
-        task.wait(5)
-        if Toggles.AutoRaid then startRaid() end
-    end
+    while true do task.wait(5); if Toggles.AutoRaid then startRaid() end end
 end)
-
 task.spawn(function()
-    while true do
-        task.wait(3)
-        if Toggles.AutoTribe then doTribe() end
-    end
+    while true do task.wait(3); if Toggles.AutoTribe then doTribe() end end
 end)
 
 -- ===== QUẢN LÝ LOOP =====
 task.spawn(function()
     while true do
         task.wait(0.5)
-        
-        -- Sync Anti-Ban toggles
         AntiBan.Enabled = Toggles.AntiBanEnabled ~= false
         AntiBan.RandomDelay = Toggles.AntiBanRandomDelay ~= false
         AntiBan.HumanLikeClick = Toggles.AntiBanHumanClick ~= false
         AntiBan.SafeTeleport = Toggles.AntiBanSafeTeleport ~= false
         AntiBan.AutoBreak = Toggles.AntiBanAutoBreak ~= false
         AntiBan.FakeActivity = Toggles.AntiBanFakeActivity ~= false
-        
+
+        if Toggles.AutoFarm and not _G._autoFarmRun then
+            _G._autoFarmRun = true; autoFarmLoop()
+        elseif not Toggles.AutoFarm then _G._autoFarmRun = false end
+
         if Toggles.SpeedFarm and not _G._speedRun then
-            _G._speedRun = true
-            speedFarmLoop()
-        elseif not Toggles.SpeedFarm then
-            _G._speedRun = false
-        end
+            _G._speedRun = true; speedFarmLoop()
+        elseif not Toggles.SpeedFarm then _G._speedRun = false end
+
+        if Toggles.ChestFarm and not _G._chestRun then
+            _G._chestRun = true; chestFarmLoop()
+        elseif not Toggles.ChestFarm then _G._chestRun = false end
+
         if Toggles.AuraKill and not _G._auraRun then
-            _G._auraRun = true
-            auraKillLoop()
-        elseif not Toggles.AuraKill then
-            _G._auraRun = false
-        end
+            _G._auraRun = true; auraKillLoop()
+        elseif not Toggles.AuraKill then _G._auraRun = false end
+
         if Toggles.AutoStat and not _G._statRun then
-            _G._statRun = true
-            autoStatLoop()
-        elseif not Toggles.AutoStat then
-            _G._statRun = false
-        end
+            _G._statRun = true; autoStatLoop()
+        elseif not Toggles.AutoStat then _G._statRun = false end
+
         if Toggles.AutoNewQuest and not _G._newQuestRun then
-            _G._newQuestRun = true
-            autoNewQuestLoop()
-        elseif not Toggles.AutoNewQuest then
-            _G._newQuestRun = false
-        end
-        if Toggles.AutoHopMythical and not _G._hopRun then
+            _G._newQuestRun = true; autoNewQuestLoop()
+        elseif not Toggles.AutoNewQuest then _G._newQuestRun = false end
+
+        if Toggles.MythicalHop and not _G._hopRun then
             _G._hopRun = true
             task.spawn(function()
-                while Toggles.AutoHopMythical do
-                    autoHopForMythical()
+                while Toggles.MythicalHop do
+                    doMythicalHop()
                     task.wait(math.random(40, 60))
                 end
             end)
-        elseif not Toggles.AutoHopMythical then
-            _G._hopRun = false
-        end
+        elseif not Toggles.MythicalHop then _G._hopRun = false end
     end
 end)
 
@@ -951,9 +863,10 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+-- Nút toggle (kéo thả bằng giữ chuột)
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
-ToggleBtn.Position = UDim2.new(0, 15, 0.5, -27)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 15, 0.5, -25)
 ToggleBtn.BackgroundColor3 = Colors.Accent
 ToggleBtn.Text = "🍎"
 ToggleBtn.TextScaled = true
@@ -961,8 +874,9 @@ ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.Parent = ScreenGui
 ToggleBtn.Active = true
 ToggleBtn.Visible = false
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 25)
 
+-- Logic kéo thả
 local dragging, dragStart, startPos, dragDistance = false, nil, nil, 0
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 
@@ -979,7 +893,6 @@ ToggleBtn.InputBegan:Connect(function(input)
         end)
     end
 end)
-
 ToggleBtn.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement 
        or input.UserInputType == Enum.UserInputType.Touch then
@@ -994,10 +907,17 @@ ToggleBtn.InputChanged:Connect(function(input)
         end
     end
 end)
+ToggleBtn.MouseButton1Click:Connect(function()
+    if dragDistance < 10 then
+        Main.Visible = true
+        ToggleBtn.Visible = false
+    end
+end)
 
+-- Main Frame (nhỏ hơn)
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 620, 0, 380)
-Main.Position = UDim2.new(0.5, -310, 0.5, -190)
+Main.Size = UDim2.new(0, 560, 0, 340)
+Main.Position = UDim2.new(0.5, -280, 0.5, -170)
 Main.BackgroundColor3 = Colors.Bg
 Main.BorderSizePixel = 0
 Main.Active = true
@@ -1008,8 +928,9 @@ local stroke = Instance.new("UIStroke", Main)
 stroke.Color = Colors.Accent
 stroke.Thickness = 2
 
+-- Header
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 40)
+Header.Size = UDim2.new(1, 0, 0, 36)
 Header.BackgroundColor3 = Colors.Accent
 Header.BorderSizePixel = 0
 Header.Parent = Main
@@ -1018,7 +939,7 @@ Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -50, 1, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🛡️ HelloHub V7 - Anti-Ban + Blox Fruits"
+Title.Text = "🍎 HelloHub V8"
 Title.TextColor3 = Color3.new(1,1,1)
 Title.TextScaled = true
 Title.Font = Enum.Font.GothamBold
@@ -1027,8 +948,8 @@ Title.Position = UDim2.new(0, 15, 0, 0)
 Title.Parent = Header
 
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -35, 0, 5)
+MinBtn.Size = UDim2.new(0, 26, 0, 26)
+MinBtn.Position = UDim2.new(1, -31, 0, 5)
 MinBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 MinBtn.Text = "X"
 MinBtn.TextColor3 = Color3.new(1,1,1)
@@ -1037,9 +958,10 @@ MinBtn.TextScaled = true
 MinBtn.Parent = Header
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
+-- TabBar
 local TabBar = Instance.new("Frame")
-TabBar.Size = UDim2.new(1, -20, 0, 35)
-TabBar.Position = UDim2.new(0, 10, 0, 48)
+TabBar.Size = UDim2.new(1, -20, 0, 32)
+TabBar.Position = UDim2.new(0, 10, 0, 44)
 TabBar.BackgroundColor3 = Colors.Tab
 TabBar.BorderSizePixel = 0
 TabBar.Parent = Main
@@ -1047,7 +969,7 @@ Instance.new("UICorner", TabBar).CornerRadius = UDim.new(0, 8)
 
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
-TabLayout.Padding = UDim.new(0, 4)
+TabLayout.Padding = UDim.new(0, 3)
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 TabLayout.Parent = TabBar
@@ -1057,16 +979,16 @@ TabPadding.PaddingLeft = UDim.new(0, 4)
 TabPadding.PaddingRight = UDim.new(0, 4)
 TabPadding.Parent = TabBar
 
+-- Content
 local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -20, 1, -100)
-Content.Position = UDim2.new(0, 10, 0, 90)
+Content.Size = UDim2.new(1, -20, 1, -92)
+Content.Position = UDim2.new(0, 10, 0, 82)
 Content.BackgroundColor3 = Colors.Tab
 Content.BorderSizePixel = 0
 Content.Parent = Main
 Instance.new("UICorner", Content).CornerRadius = UDim.new(0, 8)
 
 local Pages = {}
-
 local function createPage(name)
     local page = Instance.new("ScrollingFrame")
     page.Size = UDim2.new(1, -10, 1, -10)
@@ -1079,7 +1001,7 @@ local function createPage(name)
     page.Visible = false
     page.Parent = Content
     local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 6)
+    layout.Padding = UDim.new(0, 5)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Parent = page
     local pad = Instance.new("UIPadding")
@@ -1094,7 +1016,7 @@ end
 local TabButtons = {}
 local function createTab(name, pageName)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 80, 0, 27)
+    btn.Size = UDim2.new(0, 72, 0, 25)
     btn.BackgroundColor3 = Colors.Tab
     btn.BorderSizePixel = 0
     btn.Text = name
@@ -1124,30 +1046,79 @@ createPage("Quest")
 createPage("Mastery")
 createPage("PVP")
 createPage("AntiBan")
-createPage("Settings")
 
+-- ===== TOGGLE SWITCH (kiểu QuantumHub) =====
 local function makeToggle(parent, text, key, default)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -5, 0, 38)
-    btn.BackgroundColor3 = default and Colors.BtnOn or Colors.BtnOff
-    btn.BorderSizePixel = 0
-    btn.Text = text .. ": " .. (default and "ON" or "OFF")
-    btn.TextColor3 = Colors.Text
-    btn.TextScaled = true
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = parent
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-    btn.MouseButton1Click:Connect(function()
+    -- Container
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -5, 0, 32)
+    container.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    container.BorderSizePixel = 0
+    container.Parent = parent
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
+    
+    -- Label (bên trái)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -70, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Colors.Text
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+    
+    -- Switch background (bên phải)
+    local switchBg = Instance.new("Frame")
+    switchBg.Size = UDim2.new(0, 44, 0, 22)
+    switchBg.Position = UDim2.new(1, -54, 0.5, -11)
+    switchBg.BackgroundColor3 = default and Colors.SwitchOn or Colors.SwitchOff
+    switchBg.BorderSizePixel = 0
+    switchBg.Parent = container
+    Instance.new("UICorner", switchBg).CornerRadius = UDim.new(1, 0)
+    
+    -- Switch knob (nút tròn)
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 18, 0, 18)
+    knob.Position = default and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
+    knob.BackgroundColor3 = Color3.new(1,1,1)
+    knob.BorderSizePixel = 0
+    knob.Parent = switchBg
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+    
+    -- Click vào container để toggle
+    local clickBtn = Instance.new("TextButton")
+    clickBtn.Size = UDim2.new(1, 0, 1, 0)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.Parent = container
+    
+    Toggles[key] = default or false
+    
+    clickBtn.MouseButton1Click:Connect(function()
         Toggles[key] = not Toggles[key]
-        btn.Text = text .. ": " .. (Toggles[key] and "ON" or "OFF")
-        btn.BackgroundColor3 = Toggles[key] and Colors.BtnOn or Colors.BtnOff
+        
+        -- Animate knob
+        local targetPos
+        if Toggles[key] then
+            targetPos = UDim2.new(1, -20, 0.5, -9)
+            switchBg.BackgroundColor3 = Colors.SwitchOn
+        else
+            targetPos = UDim2.new(0, 2, 0.5, -9)
+            switchBg.BackgroundColor3 = Colors.SwitchOff
+        end
+        
+        knob:TweenPosition(targetPos, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
     end)
-    return btn
+    
+    return container
 end
 
+-- ===== ACTION BUTTON =====
 local function makeAction(parent, text, color, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -5, 0, 38)
+    btn.Size = UDim2.new(1, -5, 0, 32)
     btn.BackgroundColor3 = color or Colors.Accent
     btn.BorderSizePixel = 0
     btn.Text = text
@@ -1155,7 +1126,7 @@ local function makeAction(parent, text, color, callback)
     btn.TextScaled = true
     btn.Font = Enum.Font.GothamBold
     btn.Parent = parent
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     btn.MouseButton1Click:Connect(callback)
     return btn
 end
@@ -1166,37 +1137,37 @@ makeAction(Pages.Main, "🔄 RESET CHARACTER", Color3.fromRGB(200, 130, 40), fun
     local h = getHumanoid()
     if h then h.Health = 0 end
 end)
-makeToggle(Pages.Main, "📜 AUTO QUEST", "AutoQuest", false)
-makeToggle(Pages.Main, "🎰 AUTO GACHA", "AutoGacha", false)
+makeToggle(Pages.Main, "📜 Auto Quest", "AutoQuest", false)
+makeToggle(Pages.Main, "🎰 Auto Gacha", "AutoGacha", false)
 
 -- ===== TAB FARM =====
-makeToggle(Pages.Farm, "⚔️ AUTO FARM", "AutoFarm", false)
-makeToggle(Pages.Farm, "📦 AUTO CHEST", "AutoChest", false)
-makeToggle(Pages.Farm, "⚡ SPEED FARM", "SpeedFarm", false)
-makeToggle(Pages.Farm, "⚔️ AUTO RAID", "AutoRaid", false)
-makeToggle(Pages.Farm, "👤 AUTO TRIBE", "AutoTribe", false)
+makeToggle(Pages.Farm, "⚔️ Auto Farm", "AutoFarm", false)
+makeToggle(Pages.Farm, "⚡ Speed Farm", "SpeedFarm", false)
+makeToggle(Pages.Farm, "📦 Chest Farm", "ChestFarm", false)
+makeToggle(Pages.Farm, "⚔️ Auto Raid", "AutoRaid", false)
+makeToggle(Pages.Farm, "👤 Auto Tribe", "AutoTribe", false)
 
 -- ===== TAB FRUIT =====
-makeToggle(Pages.Fruit, "🍎 AUTO NHẶT TRÁI", "AutoFruitDrop", false)
-makeToggle(Pages.Fruit, "📥 AUTO LƯU TRÁI", "AutoStoreFruit", false)
+makeToggle(Pages.Fruit, "🍎 Auto Nhặt Trái", "AutoFruitDrop", false)
+makeToggle(Pages.Fruit, "📥 Auto Lưu Trái", "AutoStoreFruit", false)
 makeAction(Pages.Fruit, "🎰 GACHA 1 LẦN", Color3.fromRGB(180, 80, 200), function()
     for i = 1, 5 do doGacha() task.wait(0.5) end
 end)
 makeAction(Pages.Fruit, "📥 LƯU TRÁI 1 LẦN", Color3.fromRGB(40, 130, 200), storeFruits)
-makeAction(Pages.Fruit, "✨ ĐỔI SERVER TÌM MYTHICAL", Colors.Mythical, autoHopForMythical)
-makeToggle(Pages.Fruit, "✨ AUTO HOP MYTHICAL", "AutoHopMythical", false)
+makeAction(Pages.Fruit, "✨ MYTHICAL HOP (1 LẦN)", Colors.Mythical, doMythicalHop)
+makeToggle(Pages.Fruit, "✨ Mythical Hop", "MythicalHop", false)
 
 -- ===== TAB QUEST =====
 makeAction(Pages.Quest, "📜 NHẬN QUEST 1 LẦN", Color3.fromRGB(200, 130, 40), doQuestFixed)
 makeAction(Pages.Quest, "👤 TRIBE QUEST 1 LẦN", Color3.fromRGB(40, 130, 200), doTribe)
 makeAction(Pages.Quest, "⚔️ RAID 1 LẦN", Color3.fromRGB(200, 80, 40), startRaid)
-makeToggle(Pages.Quest, "📜 AUTO QUA QUEST MỚI", "AutoNewQuest", false)
+makeToggle(Pages.Quest, "📜 Auto Quest Mới", "AutoNewQuest", false)
 
 -- ===== TAB MASTERY =====
-makeToggle(Pages.Mastery, "⚔️ AUTO MASTERY", "AutoMastery", false)
+makeToggle(Pages.Mastery, "⚔️ Auto Mastery", "AutoMastery", false)
 
 local weaponLabel = Instance.new("TextLabel")
-weaponLabel.Size = UDim2.new(1, -5, 0, 22)
+weaponLabel.Size = UDim2.new(1, -5, 0, 20)
 weaponLabel.BackgroundTransparency = 1
 weaponLabel.Text = "Chọn vũ khí cần cày:"
 weaponLabel.TextColor3 = Colors.Accent
@@ -1206,12 +1177,12 @@ weaponLabel.TextXAlignment = Enum.TextXAlignment.Left
 weaponLabel.Parent = Pages.Mastery
 
 local Dropdown = Instance.new("TextButton")
-Dropdown.Size = UDim2.new(1, -5, 0, 40)
+Dropdown.Size = UDim2.new(1, -5, 0, 32)
 Dropdown.BackgroundColor3 = Colors.Bg
 Dropdown.BorderSizePixel = 0
 Dropdown.Text = ""
 Dropdown.Parent = Pages.Mastery
-Instance.new("UICorner", Dropdown).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", Dropdown).CornerRadius = UDim.new(0, 6)
 local dstroke = Instance.new("UIStroke", Dropdown)
 dstroke.Color = Colors.Accent
 dstroke.Thickness = 1
@@ -1244,7 +1215,7 @@ DropList.BorderSizePixel = 0
 DropList.ScrollBarThickness = 3
 DropList.Visible = false
 DropList.Parent = Pages.Mastery
-Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
 local lstroke = Instance.new("UIStroke", DropList)
 lstroke.Color = Colors.Accent
 lstroke.Thickness = 1
@@ -1275,7 +1246,7 @@ local function refreshWeaponList()
     end
     for i, name in ipairs(items) do
         local item = Instance.new("TextButton")
-        item.Size = UDim2.new(1, -8, 0, 30)
+        item.Size = UDim2.new(1, -8, 0, 28)
         item.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
         item.BorderSizePixel = 0
         item.Text = (i == 1) and name or ("🗡️ " .. name)
@@ -1291,8 +1262,8 @@ local function refreshWeaponList()
         end)
     end
     local count = #items
-    DropList.CanvasSize = UDim2.new(0, 0, 0, count * 32 + 8)
-    DropList.Size = UDim2.new(1, -5, 0, math.min(count * 32 + 8, 180))
+    DropList.CanvasSize = UDim2.new(0, 0, 0, count * 30 + 8)
+    DropList.Size = UDim2.new(1, -5, 0, math.min(count * 30 + 8, 160))
     DropList.Visible = true
 end
 
@@ -1300,83 +1271,35 @@ Dropdown.MouseButton1Click:Connect(refreshWeaponList)
 makeAction(Pages.Mastery, "🔄 LÀM MỚI DANH SÁCH", Color3.fromRGB(80, 80, 120), refreshWeaponList)
 
 -- ===== TAB PVP =====
-makeToggle(Pages.PVP, "⚔️ AURA KILL (100 STUDS)", "AuraKill", false)
-makeToggle(Pages.PVP, "📊 AUTO NÂNG CHỈ SỐ", "AutoStat", false)
+makeToggle(Pages.PVP, "⚔️ Aura Kill (100 studs)", "AuraKill", false)
+makeToggle(Pages.PVP, "📊 Auto Nâng Chỉ Số", "AutoStat", false)
 
-makeAction(Pages.PVP, "📊 Chọn: Melee", Color3.fromRGB(80, 80, 120), function()
+makeAction(Pages.PVP, "📊 Melee", Color3.fromRGB(80, 80, 120), function()
     StatChoice = "Melee"
-    StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="📊 Melee"; Duration=2})
+    StarterGui:SetCore("SendNotification", {Title="📊"; Text="Melee"; Duration=2})
 end)
-makeAction(Pages.PVP, "📊 Chọn: Defense", Color3.fromRGB(80, 80, 120), function()
+makeAction(Pages.PVP, "📊 Defense", Color3.fromRGB(80, 80, 120), function()
     StatChoice = "Defense"
-    StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="📊 Defense"; Duration=2})
+    StarterGui:SetCore("SendNotification", {Title="📊"; Text="Defense"; Duration=2})
 end)
-makeAction(Pages.PVP, "📊 Chọn: Sword", Color3.fromRGB(80, 80, 120), function()
+makeAction(Pages.PVP, "📊 Sword", Color3.fromRGB(80, 80, 120), function()
     StatChoice = "Sword"
-    StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="📊 Sword"; Duration=2})
+    StarterGui:SetCore("SendNotification", {Title="📊"; Text="Sword"; Duration=2})
 end)
-makeAction(Pages.PVP, "📊 Chọn: Fruit", Color3.fromRGB(80, 80, 120), function()
+makeAction(Pages.PVP, "📊 Fruit", Color3.fromRGB(80, 80, 120), function()
     StatChoice = "Fruit"
-    StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="📊 Fruit"; Duration=2})
+    StarterGui:SetCore("SendNotification", {Title="📊"; Text="Fruit"; Duration=2})
 end)
 
 makeAction(Pages.PVP, "🛒 CHECK SHOP", Color3.fromRGB(40, 130, 200), checkShop)
 
 -- ===== TAB ANTI-BAN =====
-local abLabel = Instance.new("TextLabel")
-abLabel.Size = UDim2.new(1, -5, 0, 30)
-abLabel.BackgroundTransparency = 1
-abLabel.Text = "🛡️ Cài đặt chống ban (giảm rủi ro):"
-abLabel.TextColor3 = Colors.AntiBan
-abLabel.TextScaled = true
-abLabel.Font = Enum.Font.GothamBold
-abLabel.TextXAlignment = Enum.TextXAlignment.Left
-abLabel.Parent = Pages.AntiBan
-
-makeToggle(Pages.AntiBan, "🛡️ ANTI-BAN", "AntiBanEnabled", true)
-makeToggle(Pages.AntiBan, "⏱️ RANDOM DELAY", "AntiBanRandomDelay", true)
-makeToggle(Pages.AntiBan, "👤 HUMAN-LIKE CLICK", "AntiBanHumanClick", true)
-makeToggle(Pages.AntiBan, "📍 SAFE TELEPORT", "AntiBanSafeTeleport", true)
-makeToggle(Pages.AntiBan, "☕ AUTO BREAK", "AntiBanAutoBreak", true)
-makeToggle(Pages.AntiBan, "🚶 FAKE ACTIVITY", "AntiBanFakeActivity", true)
-
-makeAction(Pages.AntiBan, "⏱️ Nghỉ mỗi: 15 phút", Color3.fromRGB(80, 80, 120), function()
-    AntiBan.BreakInterval = 900
-    StarterGui:SetCore("SendNotification", {Title="🛡️"; Text="Nghỉ mỗi 15 phút"; Duration=2})
-end)
-makeAction(Pages.AntiBan, "⏱️ Nghỉ mỗi: 30 phút", Color3.fromRGB(80, 80, 120), function()
-    AntiBan.BreakInterval = 1800
-    StarterGui:SetCore("SendNotification", {Title="🛡️"; Text="Nghỉ mỗi 30 phút"; Duration=2})
-end)
-makeAction(Pages.AntiBan, "⏱️ Nghỉ mỗi: 1 giờ", Color3.fromRGB(80, 80, 120), function()
-    AntiBan.BreakInterval = 3600
-    StarterGui:SetCore("SendNotification", {Title="🛡️"; Text="Nghỉ mỗi 1 giờ"; Duration=2})
-end)
-
-local abStatus = Instance.new("TextLabel")
-abStatus.Size = UDim2.new(1, -5, 0, 100)
-abStatus.BackgroundTransparency = 1
-abStatus.Text = "⚠️ LƯU Ý:\nAnti-Ban chỉ GIẢM THIỂU rủi ro.\nKHÔNG bypass 100% anti-cheat.\nDùng PRIVATE SERVER để an toàn nhất."
-abStatus.TextColor3 = Color3.fromRGB(255, 200, 80)
-abStatus.TextScaled = true
-abStatus.Font = Enum.Font.Gotham
-abStatus.TextXAlignment = Enum.TextXAlignment.Left
-abStatus.Parent = Pages.AntiBan
-
--- ===== TAB SETTINGS =====
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Size = UDim2.new(1, -5, 0, 100)
-infoLabel.BackgroundTransparency = 1
-infoLabel.Text = "HelloHub V7 FINAL\nTác giả: Khang5138\nGitHub: HelloHub-VN\n\n20+ tính năng\nAnti-Ban module\n\nChúc bạn chơi vui!"
-infoLabel.TextColor3 = Colors.Sub
-infoLabel.TextScaled = true
-infoLabel.Font = Enum.Font.Gotham
-infoLabel.Parent = Pages.Settings
-
-makeAction(Pages.Settings, "❌ ĐÓNG GUI", Color3.fromRGB(200, 60, 60), function()
-    Main.Visible = false
-    ToggleBtn.Visible = true
-end)
+makeToggle(Pages.AntiBan, "🛡️ Anti-Ban", "AntiBanEnabled", true)
+makeToggle(Pages.AntiBan, "⏱️ Random Delay", "AntiBanRandomDelay", true)
+makeToggle(Pages.AntiBan, "👤 Human-Like Click", "AntiBanHumanClick", true)
+makeToggle(Pages.AntiBan, "📍 Safe Teleport", "AntiBanSafeTeleport", true)
+makeToggle(Pages.AntiBan, "☕ Auto Break", "AntiBanAutoBreak", true)
+makeToggle(Pages.AntiBan, "🚶 Fake Activity", "AntiBanFakeActivity", true)
 
 -- ===== TẠO TAB =====
 createTab("🏠 Main", "Main")
@@ -1385,8 +1308,7 @@ createTab("🍎 Fruit", "Fruit")
 createTab("📜 Quest", "Quest")
 createTab("🗡️ Mastery", "Mastery")
 createTab("⚔️ PVP", "PVP")
-createTab("🛡️ Anti-Ban", "AntiBan")
-createTab("⚙️ Cài đặt", "Settings")
+createTab("🛡️ AntiBan", "AntiBan")
 
 Pages.Main.Visible = true
 TabButtons["🏠 Main"].BackgroundColor3 = Colors.Accent
@@ -1398,18 +1320,11 @@ MinBtn.MouseButton1Click:Connect(function()
     ToggleBtn.Visible = true
 end)
 
-ToggleBtn.MouseButton1Click:Connect(function()
-    if dragDistance < 10 then
-        Main.Visible = true
-        ToggleBtn.Visible = false
-    end
-end)
-
 -- ===== THÔNG BÁO =====
 StarterGui:SetCore("SendNotification", {
-    Title = "🛡️ HelloHub V7 FINAL";
-    Text = "✅ Đã load! Anti-Ban + Auto Mythical + 20 features.";
+    Title = "🍎 HelloHub";
+    Text = "✅ Đã load! Toggle switch + Farm riêng.";
     Duration = 5;
 })
 
-print("[HelloHub V7] Ready!")
+print("[HelloHub] Ready!")
