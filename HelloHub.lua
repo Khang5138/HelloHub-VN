@@ -1,7 +1,7 @@
 --[[
     ╔══════════════════════════════════════════╗
     ║   HelloHub - Blox Fruits                 ║
-    ║   Logo tròn + Không teleport Dealer      ║
+    ║   Full update + Hitbox item đánh quái    ║
     ╚══════════════════════════════════════════╝
     
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Khang5138/HelloHub-VN/main/HelloHub.lua"))()
@@ -20,6 +20,13 @@ local TeleportService = game:GetService("TeleportService")
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
+
+-- ===== CHECK NẾU ĐÃ CÓ HELLOHUB =====
+if _G.HelloHubLoaded then
+    local oldGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("HelloHub")
+    if oldGui then oldGui:Destroy() end
+end
+_G.HelloHubLoaded = true
 
 print("[HelloHub] Loaded!")
 
@@ -125,14 +132,135 @@ local function safeTeleport(targetPos)
     end
 end
 
--- ===== BAY CAO + ĐÁNH QUÁI =====
+-- ===== BAY THẤP =====
 local function flyHighToMonster(monsterPos)
     local hrp = getHRP()
     if hrp then
-        hrp.CFrame = CFrame.new(monsterPos.X, 100, monsterPos.Z)
+        hrp.CFrame = CFrame.new(monsterPos.X, 15, monsterPos.Z)
     end
 end
 
+-- ===== HITBOX ITEM ĐÁNH QUÁI =====
+-- Thay vì vòng tròn, tạo 1 part hình dạng giống vũ khí đang cầm
+local FarmHitboxes = {}
+
+-- Lấy tên vũ khí đang cầm (hoặc vũ khí được chọn)
+local function getActiveWeaponName(weaponChoice)
+    if weaponChoice == "Nearest" then
+        local char = LocalPlayer.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        return tool and tool.Name or "Nearest"
+    end
+    return weaponChoice
+end
+
+-- Tạo hitbox item đánh quái (mô phỏng vũ khí)
+local function createFarmHitbox(farmType, weaponName)
+    local hrp = getHRP()
+    if not hrp then return end
+    
+    -- Xóa hitbox cũ của farm này
+    if FarmHitboxes[farmType] then
+        FarmHitboxes[farmType]:Destroy()
+        FarmHitboxes[farmType] = nil
+    end
+    
+    -- Tạo model đại diện cho vũ khí (thanh kiếm)
+    local weaponModel = Instance.new("Model")
+    weaponModel.Name = "HelloHub_" .. farmType .. "_WeaponHitbox"
+    weaponModel.Parent = Workspace
+    
+    -- Thân kiếm (blade)
+    local blade = Instance.new("Part")
+    blade.Name = "Blade"
+    blade.Size = Vector3.new(0.3, 0.3, 6) -- Kiếm dài 6 studs
+    blade.BrickColor = BrickColor.new("Really black")
+    blade.Material = Enum.Material.Metal
+    blade.Anchored = true
+    blade.CanCollide = false
+    blade.Transparency = 0.3
+    blade.Parent = weaponModel
+    
+    -- Cán kiếm (handle)
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(0.5, 0.5, 1.5)
+    handle.BrickColor = BrickColor.new("Brown")
+    handle.Material = Enum.Material.Wood
+    handle.Anchored = true
+    handle.CanCollide = false
+    handle.Transparency = 0.3
+    handle.Parent = weaponModel
+    
+    -- Chuôi kiếm (guard)
+    local guard = Instance.new("Part")
+    guard.Name = "Guard"
+    guard.Size = Vector3.new(2, 0.3, 0.5)
+    guard.BrickColor = BrickColor.new("Gold")
+    guard.Material = Enum.Material.Metal
+    guard.Anchored = true
+    guard.CanCollide = false
+    guard.Transparency = 0.3
+    guard.Parent = weaponModel
+    
+    -- Glow effect (phát sáng)
+    local pointLight = Instance.new("PointLight")
+    pointLight.Color = farmType == "AutoFarm" and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 150, 50)
+    pointLight.Brightness = 2
+    pointLight.Range = 10
+    pointLight.Parent = blade
+    
+    -- Highlight effect
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = farmType == "AutoFarm" and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 150, 50)
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.FillTransparency = 0.7
+    highlight.OutlineTransparency = 0.3
+    highlight.Parent = weaponModel
+    
+    FarmHitboxes[farmType] = weaponModel
+    
+    -- Cập nhật vị trí liên tục - xoay quanh người chơi
+    task.spawn(function()
+        local rotationAngle = 0
+        while FarmHitboxes[farmType] and weaponModel.Parent do
+            local h = getHRP()
+            if h then
+                local pos = h.Position
+                -- Vũ khí xoay tròn dưới chân người chơi
+                rotationAngle = rotationAngle + 0.15
+                
+                -- Vị trí blade xoay quanh
+                local radius = 3 -- Bán kính 3 studs
+                local offsetX = math.cos(rotationAngle) * radius
+                local offsetZ = math.sin(rotationAngle) * radius
+                
+                -- Cập nhật vị trí các bộ phận kiếm
+                local swordCFrame = CFrame.new(
+                    pos.X + offsetX, 
+                    pos.Y - 2, 
+                    pos.Z + offsetZ
+                ) * CFrame.Angles(0, -rotationAngle, math.rad(90))
+                
+                blade.CFrame = swordCFrame * CFrame.new(0, 0, 3)
+                guard.CFrame = swordCFrame * CFrame.new(0, 0, 0)
+                handle.CFrame = swordCFrame * CFrame.new(0, 0, -1)
+            end
+            task.wait(0.03)
+        end
+        if weaponModel then weaponModel:Destroy() end
+    end)
+end
+
+-- Xóa hitbox
+local function removeFarmHitbox(farmType)
+    if FarmHitboxes[farmType] then
+        FarmHitboxes[farmType]:Destroy()
+        FarmHitboxes[farmType] = nil
+    end
+end
+
+-- ===== ATTACK VỚI VŨ KHÍ =====
 local function attackWithWeapon(weaponName)
     pcall(function()
         if weaponName == "Nearest" then
@@ -155,6 +283,46 @@ local function attackWithWeapon(weaponName)
             task.wait(0.05)
             humanClick()
         end
+    end)
+end
+
+-- ===== AUTO FARM =====
+local function autoFarmLoop()
+    task.spawn(function()
+        createFarmHitbox("AutoFarm", FarmWeapon)
+        
+        while Toggles.AutoFarm do
+            local m = getMonster()
+            if m and m:FindFirstChild("HumanoidRootPart") then
+                flyHighToMonster(m.HumanoidRootPart.Position)
+                task.wait(0.1)
+                attackWithWeapon(FarmWeapon)
+            end
+            randomDelay(0.1, 0.2)
+        end
+        
+        removeFarmHitbox("AutoFarm")
+    end)
+end
+
+-- ===== SPEED FARM =====
+local function speedFarmLoop()
+    task.spawn(function()
+        createFarmHitbox("SpeedFarm", SpeedFarmWeapon)
+        
+        while Toggles.SpeedFarm do
+            local m = getMonster()
+            if m and m:FindFirstChild("HumanoidRootPart") then
+                flyHighToMonster(m.HumanoidRootPart.Position)
+                task.wait(0.05)
+                attackWithWeapon(SpeedFarmWeapon)
+                attack()
+                attack()
+            end
+            randomDelay(0.03, 0.08)
+        end
+        
+        removeFarmHitbox("SpeedFarm")
     end)
 end
 
@@ -279,7 +447,6 @@ local function getFruitDrop()
     return nearest
 end
 
--- ===== NHẶT TRÁI (KHÔNG FALLBACK DEALER) =====
 local function pickUpFruit(fruit)
     if not fruit then return end
     pcall(function()
@@ -287,16 +454,13 @@ local function pickUpFruit(fruit)
                   or fruit:FindFirstChild("HumanoidRootPart")
                   or fruit:FindFirstChildWhichIsA("BasePart")
         if not part then return end
-        
         safeTeleport(part.Position)
         task.wait(0.2)
-        
         if firetouchinterest and getHRP() then
             firetouchinterest(getHRP(), part, 0)
             task.wait(0.1)
             firetouchinterest(getHRP(), part, 1)
         end
-        
         task.wait(0.1)
         attack()
     end)
@@ -567,38 +731,6 @@ local function reduceLag()
     StarterGui:SetCore("SendNotification", {Title="HelloHub"; Text="✅ Đã giảm lag!"; Duration=3})
 end
 
--- ===== AUTO FARM =====
-local function autoFarmLoop()
-    task.spawn(function()
-        while Toggles.AutoFarm do
-            local m = getMonster()
-            if m and m:FindFirstChild("HumanoidRootPart") then
-                flyHighToMonster(m.HumanoidRootPart.Position)
-                task.wait(0.1)
-                attackWithWeapon(FarmWeapon)
-            end
-            randomDelay(0.1, 0.2)
-        end
-    end)
-end
-
--- ===== SPEED FARM =====
-local function speedFarmLoop()
-    task.spawn(function()
-        while Toggles.SpeedFarm do
-            local m = getMonster()
-            if m and m:FindFirstChild("HumanoidRootPart") then
-                flyHighToMonster(m.HumanoidRootPart.Position)
-                task.wait(0.05)
-                attackWithWeapon(SpeedFarmWeapon)
-                attack()
-                attack()
-            end
-            randomDelay(0.03, 0.08)
-        end
-    end)
-end
-
 -- ===== CHEST FARM =====
 local function chestFarmLoop()
     task.spawn(function()
@@ -720,10 +852,9 @@ local function autoNewQuestLoop()
     end)
 end
 
--- ===== CHECK SHOP (KHÔNG TELEPORT DEALER) =====
+-- ===== CHECK SHOP =====
 local function checkShop()
     pcall(function()
-        -- Bước 1: Remote mở shop
         local remotes = ReplicatedStorage:FindFirstChild("Remotes")
         local opened = false
         if remotes then
@@ -735,8 +866,6 @@ local function checkShop()
                 opened = true
             end
         end
-        
-        -- Bước 2: Fire ProximityPrompt shop trong tầm xa
         for _, obj in pairs(Workspace:GetDescendants()) do
             pcall(function()
                 if obj:IsA("ProximityPrompt") then
@@ -755,12 +884,9 @@ local function checkShop()
                 end
             end)
         end
-        
-        -- Bước 3: Quét GUI
         task.wait(0.5)
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
         if not playerGui then return end
-        
         local foundItems = {}
         for _, gui in pairs(playerGui:GetChildren()) do
             pcall(function()
@@ -777,8 +903,6 @@ local function checkShop()
                 end
             end)
         end
-        
-        -- Bước 4: Thông báo (KHÔNG teleport)
         if #foundItems > 0 then
             StarterGui:SetCore("SendNotification", {
                 Title = "🛒 Shop Check"; 
@@ -788,13 +912,13 @@ local function checkShop()
         elseif opened then
             StarterGui:SetCore("SendNotification", {
                 Title = "🛒 HelloHub";
-                Text = "Đã gửi lệnh mở shop (kiểm tra màn hình)";
+                Text = "Đã gửi lệnh mở shop!";
                 Duration = 5;
             })
         else
             StarterGui:SetCore("SendNotification", {
                 Title = "🛒 HelloHub";
-                Text = "Không tìm thấy shop nào mở!";
+                Text = "Không tìm thấy shop!";
                 Duration = 5;
             })
         end
@@ -903,12 +1027,20 @@ task.spawn(function()
         AntiBan.FakeActivity = Toggles.AntiBanFakeActivity ~= false
 
         if Toggles.AutoFarm and not _G._autoFarmRun then
-            _G._autoFarmRun = true; autoFarmLoop()
-        elseif not Toggles.AutoFarm then _G._autoFarmRun = false end
+            _G._autoFarmRun = true
+            autoFarmLoop()
+        elseif not Toggles.AutoFarm and _G._autoFarmRun then
+            _G._autoFarmRun = false
+            removeFarmHitbox("AutoFarm")
+        end
 
         if Toggles.SpeedFarm and not _G._speedRun then
-            _G._speedRun = true; speedFarmLoop()
-        elseif not Toggles.SpeedFarm then _G._speedRun = false end
+            _G._speedRun = true
+            speedFarmLoop()
+        elseif not Toggles.SpeedFarm and _G._speedRun then
+            _G._speedRun = false
+            removeFarmHitbox("SpeedFarm")
+        end
 
         if Toggles.ChestFarm and not _G._chestRun then
             _G._chestRun = true; chestFarmLoop()
@@ -932,13 +1064,18 @@ end)
 -- ===== GUI =====
 -- ============================================================
 
+-- Xóa GUI cũ
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+local existingGui = playerGui:FindFirstChild("HelloHub")
+if existingGui then existingGui:Destroy() end
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HelloHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = playerGui
 
--- ===== NÚT TOGGLE TRÒN =====
+-- Nút toggle tròn
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
 ToggleBtn.Position = UDim2.new(0, 15, 0.5, -25)
@@ -950,12 +1087,9 @@ ToggleBtn.Parent = ScreenGui
 ToggleBtn.Active = true
 ToggleBtn.Visible = false
 ToggleBtn.BorderSizePixel = 0
-
--- Dùng UICorner với CornerRadius = 1,0 để tròn hoàn toàn
 local toggleCorner = Instance.new("UICorner", ToggleBtn)
 toggleCorner.CornerRadius = UDim.new(1, 0)
 
--- Kéo thả
 local dragging, dragStart, startPos, dragDistance = false, nil, nil, 0
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 
@@ -1105,6 +1239,17 @@ local function createTab(name, pageName)
         btn.BackgroundColor3 = Colors.Accent
         btn.TextColor3 = Color3.new(1,1,1)
     end)
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+           or input.UserInputType == Enum.UserInputType.Touch then
+            Main.Draggable = false
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Main.Draggable = true
+                end
+            end)
+        end
+    end)
     TabButtons[name] = btn
     return btn
 end
@@ -1117,7 +1262,6 @@ createPage("Mastery")
 createPage("PVP")
 createPage("AntiBan")
 
--- ===== TOGGLE SWITCH =====
 local function makeToggle(parent, text, key, default)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -5, 0, 32)
@@ -1174,6 +1318,18 @@ local function makeToggle(parent, text, key, default)
         knob:TweenPosition(targetPos, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
     end)
     
+    clickBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+           or input.UserInputType == Enum.UserInputType.Touch then
+            Main.Draggable = false
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Main.Draggable = true
+                end
+            end)
+        end
+    end)
+    
     return container
 end
 
@@ -1189,7 +1345,148 @@ local function makeAction(parent, text, color, callback)
     btn.Parent = parent
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     btn.MouseButton1Click:Connect(callback)
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+           or input.UserInputType == Enum.UserInputType.Touch then
+            Main.Draggable = false
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Main.Draggable = true
+                end
+            end)
+        end
+    end)
     return btn
+end
+
+-- Hàm tạo dropdown dùng chung
+local function makeDropdown(parent, labelText, labelColor, onSelect)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -5, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = labelColor or Colors.Accent
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    
+    local dropdown = Instance.new("TextButton")
+    dropdown.Size = UDim2.new(1, -5, 0, 32)
+    dropdown.BackgroundColor3 = Colors.Bg
+    dropdown.BorderSizePixel = 0
+    dropdown.Text = ""
+    dropdown.Parent = parent
+    Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0, 6)
+    local ds = Instance.new("UIStroke", dropdown)
+    ds.Color = labelColor or Colors.Accent
+    ds.Thickness = 1
+    
+    local dLabel = Instance.new("TextLabel")
+    dLabel.Size = UDim2.new(1, -40, 1, 0)
+    dLabel.Position = UDim2.new(0, 10, 0, 0)
+    dLabel.BackgroundTransparency = 1
+    dLabel.Text = "Nearest (Vũ khí đang cầm)"
+    dLabel.TextColor3 = Colors.Text
+    dLabel.TextScaled = true
+    dLabel.Font = Enum.Font.Gotham
+    dLabel.TextXAlignment = Enum.TextXAlignment.Left
+    dLabel.Parent = dropdown
+    
+    local dArrow = Instance.new("TextLabel")
+    dArrow.Size = UDim2.new(0, 30, 1, 0)
+    dArrow.Position = UDim2.new(1, -35, 0, 0)
+    dArrow.BackgroundTransparency = 1
+    dArrow.Text = "▼"
+    dArrow.TextColor3 = labelColor or Colors.Accent
+    dArrow.TextScaled = true
+    dArrow.Font = Enum.Font.GothamBold
+    dArrow.Parent = dropdown
+    
+    local list = Instance.new("ScrollingFrame")
+    list.Size = UDim2.new(1, -5, 0, 0)
+    list.BackgroundColor3 = Colors.Bg
+    list.BorderSizePixel = 0
+    list.ScrollBarThickness = 3
+    list.Visible = false
+    list.Parent = parent
+    Instance.new("UICorner", list).CornerRadius = UDim.new(0, 6)
+    local ls = Instance.new("UIStroke", list)
+    ls.Color = labelColor or Colors.Accent
+    ls.Thickness = 1
+    
+    local lLayout = Instance.new("UIListLayout")
+    lLayout.Padding = UDim.new(0, 2)
+    lLayout.Parent = list
+    local lPad = Instance.new("UIPadding")
+    lPad.PaddingTop = UDim.new(0, 4)
+    lPad.PaddingBottom = UDim.new(0, 4)
+    lPad.Parent = list
+    
+    local function refresh()
+        for _, c in pairs(list:GetChildren()) do
+            if c:IsA("TextButton") then c:Destroy() end
+        end
+        local items = {"Nearest (Vũ khí đang cầm)"}
+        local seen = {}
+        for _, src in pairs({LocalPlayer.Character, LocalPlayer:FindFirstChild("Backpack")}) do
+            if src then
+                for _, t in pairs(src:GetChildren()) do
+                    if t:IsA("Tool") and not seen[t.Name] then
+                        table.insert(items, t.Name)
+                        seen[t.Name] = true
+                    end
+                end
+            end
+        end
+        for i, name in ipairs(items) do
+            local item = Instance.new("TextButton")
+            item.Size = UDim2.new(1, -8, 0, 28)
+            item.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+            item.BorderSizePixel = 0
+            item.Text = (i == 1) and name or ("🗡️ " .. name)
+            item.TextColor3 = Colors.Text
+            item.TextScaled = true
+            item.Font = Enum.Font.Gotham
+            item.Parent = list
+            Instance.new("UICorner", item).CornerRadius = UDim.new(0, 6)
+            item.MouseButton1Click:Connect(function()
+                dLabel.Text = (i == 1) and "Nearest (Vũ khí đang cầm)" or ("🗡️ " .. name)
+                list.Visible = false
+                list.Size = UDim2.new(1, -5, 0, 0)
+                Main.Draggable = true
+                onSelect((i == 1) and "Nearest" or name)
+            end)
+            item.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 
+                   or input.UserInputType == Enum.UserInputType.Touch then
+                    Main.Draggable = false
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            Main.Draggable = true
+                        end
+                    end)
+                end
+            end)
+        end
+        local count = #items
+        list.CanvasSize = UDim2.new(0, 0, 0, count * 30 + 8)
+        list.Size = UDim2.new(1, -5, 0, math.min(count * 30 + 8, 160))
+        list.Visible = true
+    end
+    
+    dropdown.MouseButton1Click:Connect(function()
+        if list.Visible then
+            list.Visible = false
+            list.Size = UDim2.new(1, -5, 0, 0)
+            Main.Draggable = true
+        else
+            refresh()
+            Main.Draggable = false
+        end
+    end)
+    
+    return dropdown
 end
 
 -- ===== TAB MAIN =====
@@ -1203,7 +1500,15 @@ makeToggle(Pages.Main, "🎰 Auto Gacha", "AutoGacha", false)
 
 -- ===== TAB FARM =====
 makeToggle(Pages.Farm, "⚔️ Auto Farm", "AutoFarm", false)
+makeDropdown(Pages.Farm, "🗡️ Vũ khí Auto Farm:", Colors.Accent, function(weapon)
+    FarmWeapon = weapon
+end)
+
 makeToggle(Pages.Farm, "⚡ Speed Farm", "SpeedFarm", false)
+makeDropdown(Pages.Farm, "🗡️ Vũ khí Speed Farm:", Color3.fromRGB(255, 150, 50), function(weapon)
+    SpeedFarmWeapon = weapon
+end)
+
 makeToggle(Pages.Farm, "📦 Chest Farm", "ChestFarm", false)
 makeToggle(Pages.Farm, "⚔️ Auto Raid", "AutoRaid", false)
 makeToggle(Pages.Farm, "👤 Auto Tribe", "AutoTribe", false)
@@ -1225,110 +1530,9 @@ makeToggle(Pages.Quest, "📜 Auto Quest Mới", "AutoNewQuest", false)
 
 -- ===== TAB MASTERY =====
 makeToggle(Pages.Mastery, "⚔️ Auto Mastery", "AutoMastery", false)
-
-local weaponLabel = Instance.new("TextLabel")
-weaponLabel.Size = UDim2.new(1, -5, 0, 20)
-weaponLabel.BackgroundTransparency = 1
-weaponLabel.Text = "Chọn vũ khí cần cày:"
-weaponLabel.TextColor3 = Colors.Accent
-weaponLabel.TextScaled = true
-weaponLabel.Font = Enum.Font.GothamBold
-weaponLabel.TextXAlignment = Enum.TextXAlignment.Left
-weaponLabel.Parent = Pages.Mastery
-
-local Dropdown = Instance.new("TextButton")
-Dropdown.Size = UDim2.new(1, -5, 0, 32)
-Dropdown.BackgroundColor3 = Colors.Bg
-Dropdown.BorderSizePixel = 0
-Dropdown.Text = ""
-Dropdown.Parent = Pages.Mastery
-Instance.new("UICorner", Dropdown).CornerRadius = UDim.new(0, 6)
-local dstroke = Instance.new("UIStroke", Dropdown)
-dstroke.Color = Colors.Accent
-dstroke.Thickness = 1
-
-local DropLabel = Instance.new("TextLabel")
-DropLabel.Size = UDim2.new(1, -40, 1, 0)
-DropLabel.Position = UDim2.new(0, 10, 0, 0)
-DropLabel.BackgroundTransparency = 1
-DropLabel.Text = "Nearest (Vũ khí đang cầm)"
-DropLabel.TextColor3 = Colors.Text
-DropLabel.TextScaled = true
-DropLabel.Font = Enum.Font.Gotham
-DropLabel.TextXAlignment = Enum.TextXAlignment.Left
-DropLabel.Parent = Dropdown
-
-local DropArrow = Instance.new("TextLabel")
-DropArrow.Size = UDim2.new(0, 30, 1, 0)
-DropArrow.Position = UDim2.new(1, -35, 0, 0)
-DropArrow.BackgroundTransparency = 1
-DropArrow.Text = "▼"
-DropArrow.TextColor3 = Colors.Accent
-DropArrow.TextScaled = true
-DropArrow.Font = Enum.Font.GothamBold
-DropArrow.Parent = Dropdown
-
-local DropList = Instance.new("ScrollingFrame")
-DropList.Size = UDim2.new(1, -5, 0, 0)
-DropList.BackgroundColor3 = Colors.Bg
-DropList.BorderSizePixel = 0
-DropList.ScrollBarThickness = 3
-DropList.Visible = false
-DropList.Parent = Pages.Mastery
-Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
-local lstroke = Instance.new("UIStroke", DropList)
-lstroke.Color = Colors.Accent
-lstroke.Thickness = 1
-
-local dropLayout = Instance.new("UIListLayout")
-dropLayout.Padding = UDim.new(0, 2)
-dropLayout.Parent = DropList
-local dropPad = Instance.new("UIPadding")
-dropPad.PaddingTop = UDim.new(0, 4)
-dropPad.PaddingBottom = UDim.new(0, 4)
-dropPad.Parent = DropList
-
-local function refreshWeaponList()
-    for _, c in pairs(DropList:GetChildren()) do
-        if c:IsA("TextButton") then c:Destroy() end
-    end
-    local items = {"Nearest (Vũ khí đang cầm)"}
-    local seen = {}
-    for _, src in pairs({LocalPlayer.Character, LocalPlayer:FindFirstChild("Backpack")}) do
-        if src then
-            for _, t in pairs(src:GetChildren()) do
-                if t:IsA("Tool") and not seen[t.Name] then
-                    table.insert(items, t.Name)
-                    seen[t.Name] = true
-                end
-            end
-        end
-    end
-    for i, name in ipairs(items) do
-        local item = Instance.new("TextButton")
-        item.Size = UDim2.new(1, -8, 0, 28)
-        item.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-        item.BorderSizePixel = 0
-        item.Text = (i == 1) and name or ("🗡️ " .. name)
-        item.TextColor3 = Colors.Text
-        item.TextScaled = true
-        item.Font = Enum.Font.Gotham
-        item.Parent = DropList
-        Instance.new("UICorner", item).CornerRadius = UDim.new(0, 6)
-        item.MouseButton1Click:Connect(function()
-            MasteryWeapon = (i == 1) and "Nearest" or name
-            DropLabel.Text = (i == 1) and "Nearest (Vũ khí đang cầm)" or ("🗡️ " .. name)
-            DropList.Visible = false
-        end)
-    end
-    local count = #items
-    DropList.CanvasSize = UDim2.new(0, 0, 0, count * 30 + 8)
-    DropList.Size = UDim2.new(1, -5, 0, math.min(count * 30 + 8, 160))
-    DropList.Visible = true
-end
-
-Dropdown.MouseButton1Click:Connect(refreshWeaponList)
-makeAction(Pages.Mastery, "🔄 LÀM MỚI DANH SÁCH", Color3.fromRGB(80, 80, 120), refreshWeaponList)
+makeDropdown(Pages.Mastery, "Chọn vũ khí cần cày:", Colors.Accent, function(weapon)
+    MasteryWeapon = weapon
+end)
 
 -- ===== TAB PVP =====
 makeToggle(Pages.PVP, "⚔️ Aura Kill (100 studs)", "AuraKill", false)
@@ -1380,6 +1584,18 @@ MinBtn.MouseButton1Click:Connect(function()
     ToggleBtn.Visible = true
 end)
 
+MinBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 
+       or input.UserInputType == Enum.UserInputType.Touch then
+        Main.Draggable = false
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                Main.Draggable = true
+            end
+        end)
+    end
+end)
+
 ToggleBtn.MouseButton1Click:Connect(function()
     if dragDistance < 10 then
         Main.Visible = true
@@ -1387,10 +1603,9 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ===== THÔNG BÁO =====
 StarterGui:SetCore("SendNotification", {
     Title = "⚔️ HelloHub";
-    Text = "✅ Đã load! Logo tròn + không teleport Dealer.";
+    Text = "✅ Đã load! Hitbox item đánh quái + fix toàn bộ.";
     Duration = 5;
 })
 
